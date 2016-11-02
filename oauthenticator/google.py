@@ -18,7 +18,12 @@ from jupyterhub.utils    import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
-class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
+class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
+    _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % GITHUB_HOST
+    _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % GITHUB_HOST
+
+
+class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
     def get(self):
@@ -40,7 +45,7 @@ class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
             scope=['openid', 'email'],
             response_type='code')
 
-class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
+class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
     @gen.coroutine
     def get(self):
         self.settings['google_oauth'] = {
@@ -63,7 +68,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
             # todo: custom error
             raise HTTPError(403)
 
-class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
+class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
     login_handler = GoogleLoginHandler
     callback_handler = GoogleOAuthHandler
