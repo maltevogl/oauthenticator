@@ -18,7 +18,9 @@ from jupyterhub.utils    import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
+
 class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
+    GITHUB_HOST = os.environ.get('GITHUB_HOST')
     _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % GITHUB_HOST
     _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % GITHUB_HOST
 
