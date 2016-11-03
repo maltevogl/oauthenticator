@@ -19,7 +19,7 @@ from jupyterhub.utils    import url_path_join
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
-class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
+class OpenIDOAuth2Mixin(OpenIdMixin, GoogleOAuth2Mixin):
     GITHUB_HOST = os.environ.get('GITHUB_HOST')
     #_OPENID_ENDPOINT = "%s" % GITHUB_HOST
     _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % GITHUB_HOST
@@ -61,7 +61,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
-        self.log.debug(': "%s"', str(self.settings))
+        #self.log.debug(': "%s"', str(self.settings))
         username = yield self.authenticator.get_authenticated_user(self, None)
 
         self.log.info('google: username: "%s"', username)
