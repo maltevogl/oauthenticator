@@ -8,7 +8,7 @@ import os
 import json
 
 from tornado             import gen
-from tornado.auth        import GoogleOAuth2Mixin
+from tornado.auth        import GoogleOAuth2Mixin, OAuth2Mixin, OpenIdMixin
 from tornado.web         import HTTPError
 
 from traitlets           import Unicode
@@ -19,8 +19,9 @@ from jupyterhub.utils    import url_path_join
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
-class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
+class OpenIDOAuth2Mixin(OAuth2Mixin, OpenIdMixin):
     GITHUB_HOST = os.environ.get('GITHUB_HOST')
+    _OPENID_ENDPOINT = "%s" % GITHUB_HOST
     _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % GITHUB_HOST
     _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % GITHUB_HOST
 
@@ -91,7 +92,7 @@ class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
     def authenticate(self, handler, data=None):
         code = handler.get_argument('code', False)
         if not code:
-            raise HTTPError(400, "oauth callback made without a token") 
+            raise HTTPError(400, "oauth callback made without a token")
         if not self.oauth_callback_url:
             raise HTTPError(500, "No callback URL")
         user = yield handler.get_authenticated_user(
