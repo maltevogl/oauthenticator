@@ -24,6 +24,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):#, GoogleOAuth2Mixin):
     #_OPENID_ENDPOINT = "%s" % GITHUB_HOST
     _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % GITHUB_HOST
     _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % GITHUB_HOST
+    _OAUTH_USERINFO_URL = "https://%s/userinfo" % GITHUB_HOST
 
 
 class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
