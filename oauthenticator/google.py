@@ -51,6 +51,7 @@ class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
 
 class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
+    @_auth_return_future
     def get_authenticated_user(self, redirect_uri, code, callback):
 
         http = self.get_auth_http_client()
