@@ -61,7 +61,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
-        self.log.debug(': "%s"', str(self))
+        self.log.debug(': "%s"', str(self.settings))
         username = yield self.authenticator.get_authenticated_user(self, None)
 
         self.log.info('google: username: "%s"', username)
@@ -92,6 +92,7 @@ class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument('code', False)
+        self.log.debug('code: {}'.format(code))
         if not code:
             raise HTTPError(400, "oauth callback made without a token")
         if not self.oauth_callback_url:
