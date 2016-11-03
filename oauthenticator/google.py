@@ -49,8 +49,9 @@ class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             response_type='code')
 
 class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
-    def get_authenticated_user(self,data, redirect_uri=None, code=None):
-        self.log.debug(data, code)
+    def get_authenticated_user(self,data=None, redirect_uri=None, code=None):
+        self.log.debug(str(data), str(code))
+        return data['user']
 
     @gen.coroutine
     def get(self):
@@ -64,7 +65,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
-        self.log.debug(': "%s"', str(self.authenticator))
+        #self.log.debug(': "%s"', str(self.authenticator))
         username = yield self.authenticator.get_authenticated_user(self, None)
 
         self.log.info('google: username: "%s"', username)
@@ -119,8 +120,8 @@ class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         self.log.debug('response.body.decode(): {}'.format(body))
         bodyjs = json.loads(body)
 
-        username = bodyjs['email']
-
+        #username = bodyjs['email']
+        username = bodyjs['sub']
         if self.hosted_domain:
             if not username.endswith('@'+self.hosted_domain) or \
                 bodyjs['hd'] != self.hosted_domain:
