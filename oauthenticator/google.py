@@ -51,9 +51,33 @@ class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
 
 class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
-    #def get_authenticated_user(self,data=None, redirect_uri=None, code=None):
-    #    self.log.debug(str(data), str(code))
-    #    return data['user']
+    def get_authenticated_user(self, redirect_uri, code, callback):
+
+        http = self.get_auth_http_client()
+        body = urllib_parse.urlencode({
+            "redirect_uri": redirect_uri,
+            "code": code,
+            "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
+            "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
+            "grant_type": "authorization_code",
+        })
+
+
+        http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
+                   functools.partial(self._on_access_token, callback),
+                   method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body)
+
+
+    def _on_access_token(self, future, response):
+        """Callback function for the exchange to the access token."""
+        self.log.debug(escape.json_decode(response.body))
+
+        if response.error:
+            future.set_exception(AuthError('Google auth error: %s' % str(response)))
+            return
+
+        args = escape.json_decode(response.body)
+        future.set_result(args)
 
     @gen.coroutine
     def get(self):
