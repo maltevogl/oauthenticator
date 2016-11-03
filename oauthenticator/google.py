@@ -61,6 +61,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
         username = yield self.authenticator.get_authenticated_user(self, None)
+        print(username)
         self.log.info('google: username: "%s"', username)
         if username:
             user = self.user_from_username(username)
