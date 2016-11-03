@@ -49,7 +49,7 @@ class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             response_type='code')
 
 class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
-    def get_authenticated_user(self,data):
+    def get_authenticated_user(self,data, redirect_uri=None):
         self.log.debug(data)
 
     @gen.coroutine
