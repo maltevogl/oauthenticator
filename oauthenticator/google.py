@@ -7,7 +7,7 @@ Derived from the GitHub OAuth authenticator.
 import os
 import json
 
-from tornado             import gen
+from tornado             import gen, escape
 from tornado.auth        import GoogleOAuth2Mixin, OAuth2Mixin, OpenIdMixin
 from tornado.web         import HTTPError
 
