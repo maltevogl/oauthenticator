@@ -7,8 +7,8 @@ Derived from the GitHub OAuth authenticator.
 import os
 import json
 
-from tornado             import gen
-from tornado.auth        import GoogleOAuth2Mixin
+from tornado             import gen#, escape
+from tornado.auth        import GoogleOAuth2Mixin, OAuth2Mixin, OpenIdMixin, AuthError
 from tornado.web         import HTTPError
 
 from traitlets           import Unicode
@@ -18,7 +18,16 @@ from jupyterhub.utils    import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
-class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
+
+class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):#, GoogleOAuth2Mixin):
+    GITHUB_HOST = os.environ.get('GITHUB_HOST')
+    #_OPENID_ENDPOINT = "%s" % GITHUB_HOST
+    _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % GITHUB_HOST
+    _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % GITHUB_HOST
+    _OAUTH_USERINFO_URL = "https://%s/userinfo" % GITHUB_HOST
+
+
+class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
     def get(self):
@@ -40,7 +49,19 @@ class GoogleLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
             scope=['openid', 'email'],
             response_type='code')
 
-class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
+class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
+
+#    def _on_access_token(self, future, response):
+#        """Callback function for the exchange to the access token."""
+#         self.log.debug(escape.json_decode(response.body))
+#
+#        if response.error:
+#            future.set_exception(AuthError('Google auth error: %s' % str(response)))
+#            return
+#
+#        args = escape.json_decode(response.body)
+#        future.set_result(args)
+
     @gen.coroutine
     def get(self):
         self.settings['google_oauth'] = {
@@ -53,7 +74,9 @@ class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
 
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
+        #self.log.debug(': "%s"', str(self.authenticator))
         username = yield self.authenticator.get_authenticated_user(self, None)
+
         self.log.info('google: username: "%s"', username)
         if username:
             user = self.user_from_username(username)
@@ -63,7 +86,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
             # todo: custom error
             raise HTTPError(403)
 
-class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
+class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
     login_handler = GoogleLoginHandler
     callback_handler = GoogleOAuthHandler
@@ -82,8 +105,9 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument('code', False)
+        #self.log.debug('code: {}'.format(code))
         if not code:
-            raise HTTPError(400, "oauth callback made without a token") 
+            raise HTTPError(400, "oauth callback made without a token")
         if not self.oauth_callback_url:
             raise HTTPError(500, "No callback URL")
         user = yield handler.get_authenticated_user(
@@ -105,8 +129,7 @@ class GoogleOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         self.log.debug('response.body.decode(): {}'.format(body))
         bodyjs = json.loads(body)
 
-        username = bodyjs['email']
-
+        username = bodyjs['sub']
         if self.hosted_domain:
             if not username.endswith('@'+self.hosted_domain) or \
                 bodyjs['hd'] != self.hosted_domain:
