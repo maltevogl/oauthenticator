@@ -8,7 +8,7 @@ import os
 import json
 
 from tornado             import gen
-from tornado.auth        import GoogleOAuth2Mixin#, OAuth2Mixin, OpenIdMixin, AuthError
+from tornado.auth        import GoogleOAuth2Mixin
 from tornado.web         import HTTPError
 
 from traitlets           import Unicode
@@ -22,7 +22,10 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     """ An OpenID OAuth2 mixin to use GoogleLoginHandler with
     different Identity Providers using the OpenID standard. The current
-    setup should work with MITREid Connect servers."""
+    setup should work with MITREid Connect servers. In addtion to the usual
+    parameters client ID and secret, the environment variable OPENID_HOST
+    should be set to the URL of the OpenID provider. The API endpoints
+    might have to be changed, depending on the ID provider."""
     OPENID_HOST = os.environ.get('OPENID_HOST')
     _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % OPENID_HOST
     _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % OPENID_HOST
@@ -131,6 +134,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         return username
 
-class LocalOpenIDOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
+class LocalOpenIDOAuthenticator(LocalAuthenticator, OpenIDOAuthenticator):
     """A version that mixes in local system user creation"""
     pass
