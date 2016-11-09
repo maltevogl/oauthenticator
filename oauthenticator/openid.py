@@ -1,14 +1,14 @@
 """
-Custom Authenticator to use Google OAuth with JupyterHub.
+Custom Authenticator to use OpenID OAuth with JupyterHub.
 
-Derived from the GitHub OAuth authenticator.
+Derived from the GitHub OAuth authenticator, based on GoogleOAuthHandler.
 """
 
 import os
 import json
 
-from tornado             import gen#, escape
-from tornado.auth        import GoogleOAuth2Mixin, OAuth2Mixin, OpenIdMixin, AuthError
+from tornado             import gen
+from tornado.auth        import GoogleOAuth2Mixin#, OAuth2Mixin, OpenIdMixin, AuthError
 from tornado.web         import HTTPError
 
 from traitlets           import Unicode
@@ -19,15 +19,17 @@ from jupyterhub.utils    import url_path_join
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
-class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):#, GoogleOAuth2Mixin):
-    GITHUB_HOST = os.environ.get('GITHUB_HOST')
-    #_OPENID_ENDPOINT = "%s" % GITHUB_HOST
-    _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % GITHUB_HOST
-    _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % GITHUB_HOST
-    _OAUTH_USERINFO_URL = "https://%s/userinfo" % GITHUB_HOST
+class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
+    """ An OpenID OAuth2 mixin to use GoogleLoginHandler with
+    different Identity Providers using the OpenID standard. The current
+    setup should work with MITREid Connect servers."""
+    OPENID_HOST = os.environ.get('OPENID_HOST')
+    _OAUTH_AUTHORIZE_URL = "https://%s/authorize" % OPENID_HOST
+    _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % OPENID_HOST
+    _OAUTH_USERINFO_URL = "https://%s/userinfo" % OPENID_HOST
 
 
-class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
+class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
     def get(self):
@@ -49,18 +51,7 @@ class GoogleLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             scope=['openid', 'email'],
             response_type='code')
 
-class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
-
-#    def _on_access_token(self, future, response):
-#        """Callback function for the exchange to the access token."""
-#         self.log.debug(escape.json_decode(response.body))
-#
-#        if response.error:
-#            future.set_exception(AuthError('Google auth error: %s' % str(response)))
-#            return
-#
-#        args = escape.json_decode(response.body)
-#        future.set_result(args)
+class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
     @gen.coroutine
     def get(self):
@@ -74,9 +65,7 @@ class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
-        #self.log.debug(': "%s"', str(self.authenticator))
         username = yield self.authenticator.get_authenticated_user(self, None)
-
         self.log.info('google: username: "%s"', username)
         if username:
             user = self.user_from_username(username)
@@ -86,10 +75,10 @@ class GoogleOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
             # todo: custom error
             raise HTTPError(403)
 
-class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
+class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
-    login_handler = GoogleLoginHandler
-    callback_handler = GoogleOAuthHandler
+    login_handler = OpenIDLoginHandler
+    callback_handler = OpenIDOAuthHandler
 
     hosted_domain = Unicode(
         os.environ.get('HOSTED_DOMAIN', ''),
@@ -105,7 +94,6 @@ class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument('code', False)
-        #self.log.debug('code: {}'.format(code))
         if not code:
             raise HTTPError(400, "oauth callback made without a token")
         if not self.oauth_callback_url:
@@ -130,6 +118,7 @@ class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         bodyjs = json.loads(body)
 
         username = bodyjs['sub']
+
         if self.hosted_domain:
             if not username.endswith('@'+self.hosted_domain) or \
                 bodyjs['hd'] != self.hosted_domain:
@@ -142,6 +131,6 @@ class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         return username
 
-class LocalGoogleOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
+class LocalOpenIDOAuthenticator(LocalAuthenticator, GoogleOAuthenticator):
     """A version that mixes in local system user creation"""
     pass
