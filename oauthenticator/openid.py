@@ -58,12 +58,12 @@ class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
     @gen.coroutine
     def get(self):
-        self.settings['openid_oauth'] = {
+        self.settings['google_oauth'] = {
             'key': self.authenticator.client_id,
             'secret': self.authenticator.client_secret,
             'scope': ['openid', 'email']
         }
-        self.log.debug('openid: settings: "%s"', str(self.settings['openid_oauth']))
+        #self.log.debug('openid: settings: "%s"', str(self.settings['google_oauth']))
 
         # "Cannot redirect after headers have been written" ?
         #OAuthCallbackHandler.get(self)
