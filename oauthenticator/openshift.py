@@ -1,14 +1,12 @@
 """
-Custom Authenticator to use GitLab OAuth with JupyterHub
+Custom Authenticator to use OpenShift OAuth with JupyterHub.
 
-Modified for GitLab by Laszlo Dobos (@dobos)
-based on the GitHub plugin by Kyle Kelley (@rgbkrk)
+Derived from the GitHub OAuth authenticator.
 """
 
 
 import json
 import os
-import sys
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -20,60 +18,56 @@ from jupyterhub.auth import LocalAuthenticator
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
-# Support gitlab.com and gitlab community edition installations
-GITLAB_HOST = os.environ.get('GITLAB_HOST') or 'https://gitlab.com'
-GITLAB_API = '%s/api/v3/user' % GITLAB_HOST
+OPENSHIFT_URL = os.environ.get('OPENSHIFT_URL') or 'https://localhost:8443'
 
-class GitLabMixin(OAuth2Mixin):
-    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % GITLAB_HOST
-    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/access_token" % GITLAB_HOST
+class OpenShiftMixin(OAuth2Mixin):
+    _OAUTH_AUTHORIZE_URL = "%s/oauth/authorize" % OPENSHIFT_URL
+    _OAUTH_ACCESS_TOKEN_URL = "%s/oauth/token" % OPENSHIFT_URL
 
 
-class GitLabLoginHandler(OAuthLoginHandler, GitLabMixin):
-    pass
+class OpenShiftLoginHandler(OAuthLoginHandler, OpenShiftMixin):
+    # This allows `Service Accounts as OAuth Clients` scenario
+    # https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#service-accounts-as-oauth-clients
+    scope=['user:info']
 
 
-class GitLabOAuthenticator(OAuthenticator):
+class OpenShiftOAuthenticator(OAuthenticator):
 
-    login_service = "GitLab"
+    login_service = "OpenShift"
 
-    client_id_env = 'GITLAB_CLIENT_ID'
-    client_secret_env = 'GITLAB_CLIENT_SECRET'
-    login_handler = GitLabLoginHandler
+    login_handler = OpenShiftLoginHandler
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument("code", False)
         if not code:
             raise web.HTTPError(400, "oauth callback made without a token")
+
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
 
-        # Exchange the OAuth code for a GitLab Access Token
+        # Exchange the OAuth code for a OpenShift Access Token
         #
-        # See: https://github.com/gitlabhq/gitlabhq/blob/master/doc/api/oauth2.md
+        # See: https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#api-authentication
 
-        # GitLab specifies a POST request yet requires URL parameters
         params = dict(
             client_id=self.client_id,
             client_secret=self.client_secret,
-            code=code,
             grant_type="authorization_code",
-            redirect_uri=self.oauth_callback_url
+            code=code
         )
 
-        url = url_concat("%s/oauth/token" % GITLAB_HOST,
-                         params)
-
-        print(url, file=sys.stderr)
+        url = url_concat("%s/oauth/token" % OPENSHIFT_URL, params)
 
         req = HTTPRequest(url,
                           method="POST",
+                          validate_cert=False,
                           headers={"Accept": "application/json"},
                           body='' # Body is required for a POST...
                           )
 
         resp = yield http_client.fetch(req)
+
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
         access_token = resp_json['access_token']
@@ -81,18 +75,20 @@ class GitLabOAuthenticator(OAuthenticator):
         # Determine who the logged in user is
         headers={"Accept": "application/json",
                  "User-Agent": "JupyterHub",
+                 "Authorization": "Bearer {}".format(access_token)
         }
-        req = HTTPRequest("%s?access_token=%s" % (GITLAB_API, access_token),
+
+        req = HTTPRequest("%s/oapi/v1/users/~" % OPENSHIFT_URL,
                           method="GET",
-                          headers=headers
-                          )
+                          validate_cert=False,
+                          headers=headers)
+
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return resp_json["username"]
+        return resp_json["metadata"]["name"]
 
-
-class LocalGitLabOAuthenticator(LocalAuthenticator, GitLabOAuthenticator):
+class LocalOpenShiftOAuthenticator(LocalAuthenticator, OpenShiftOAuthenticator):
 
     """A version that mixes in local system user creation"""
     pass
