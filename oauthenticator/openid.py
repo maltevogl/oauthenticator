@@ -29,7 +29,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     OPENID_HOST = os.environ.get('OPENID_HOST')
     _OAUTH_AUTHORIZE_URL = "http://%s/auth" % OPENID_HOST
     _OAUTH_ACCESS_TOKEN_URL = "http://%s/token" % OPENID_HOST
-    _OAUTH_USERINFO_URL = "http://%s/userinfo" % OPENID_HOST
+    _OAUTH_USERINFO_URL = "http://%s/token" % OPENID_HOST
 
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
