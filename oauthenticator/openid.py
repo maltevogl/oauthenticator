@@ -27,6 +27,7 @@ class OpenIDOAuth2Mixin(OpenIdMixin):
     should be set to the URL of the OpenID provider. The API endpoints
     might have to be changed, depending on the ID provider."""
     _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
+    OPENID_HOST=_OPENID_ENDPOINT
     _OAUTH_AUTHORIZE_URL = "http://%s/auth" % OPENID_HOST
     _OAUTH_ACCESS_TOKEN_URL = "http://%s/token" % OPENID_HOST
     _OAUTH_USERINFO_URL = "http://%s/token" % OPENID_HOST
