@@ -25,6 +25,14 @@ from tornado.concurrent import TracebackFuture, return_future, chain_future
 import functools
 from tornado.stack_context import ExceptionStackContext
 
+if PY3:
+    import urllib.parse as urlparse
+    import urllib.parse as urllib_parse
+    long = int
+else:
+    import urlparse
+    import urllib as urllib_parse
+
 def _auth_return_future(f):
     """Similar to tornado.concurrent.return_future, but uses the auth
     module's legacy callback interface.
