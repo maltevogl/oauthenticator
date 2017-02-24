@@ -88,7 +88,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
             "grant_type": "authorization_code",
         })
         self.log.info('http req body: %r', body)
-        self.log.info('acc tok url: %r', _OAUTH_ACCESS_TOKEN_URL)
+        self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
         self.log.info('callback url: %r', callback)
         http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
                    functools.partial(self._on_access_token, callback),
