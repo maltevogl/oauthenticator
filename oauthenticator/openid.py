@@ -95,10 +95,10 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         http = self.get_auth_http_client()
         body = urllib_parse.urlencode({
             "redirect_uri": redirect_uri,
-            "code": code,
+            #"code": code,
             "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
             "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
-            "grant_type": "authorization_code",
+            #"grant_type": "authorization_code",
         })
         self.log.info('http req body: %r', body)
         self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
