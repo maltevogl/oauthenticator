@@ -18,6 +18,42 @@ from jupyterhub.utils    import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
+
+## debug only ##
+from tornado.util import unicode_type, ArgReplacer, PY3
+from tornado.concurrent import TracebackFuture, return_future, chain_future
+import functools
+from tornado.stack_context import ExceptionStackContext
+
+def _auth_return_future(f):
+    """Similar to tornado.concurrent.return_future, but uses the auth
+    module's legacy callback interface.
+
+    Note that when using this decorator the ``callback`` parameter
+    inside the function will actually be a future.
+    """
+    replacer = ArgReplacer(f, 'callback')
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        future = TracebackFuture()
+        callback, args, kwargs = replacer.replace(future, args, kwargs)
+        if callback is not None:
+            future.add_done_callback(
+                functools.partial(_auth_future_to_callback, callback))
+
+        def handle_exception(typ, value, tb):
+            if future.done():
+                return False
+            else:
+                future.set_exc_info((typ, value, tb))
+                return True
+        with ExceptionStackContext(handle_exception):
+            f(*args, **kwargs)
+        return future
+    return wrapper
+#################
+
 class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     """ An OpenID OAuth2 mixin to use GoogleLoginHandler with
     different Identity Providers using the OpenID standard. The current
