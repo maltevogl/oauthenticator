@@ -128,7 +128,7 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
-            scope=['openid', 'email'],
+            scope=['openid','profile', 'email'],
             response_type='code')
 
 
