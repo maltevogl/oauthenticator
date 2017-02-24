@@ -33,6 +33,19 @@ else:
     import urlparse
     import urllib as urllib_parse
 
+
+class AuthError(Exception):
+    pass
+
+
+def _auth_future_to_callback(callback, future):
+    try:
+        result = future.result()
+    except AuthError as e:
+        gen_log.warning(str(e))
+        result = None
+    callback(result)
+
 def _auth_return_future(f):
     """Similar to tornado.concurrent.return_future, but uses the auth
     module's legacy callback interface.
