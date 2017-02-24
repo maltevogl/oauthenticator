@@ -1,7 +1,7 @@
 """
-Custom Authenticator to use Google OAuth with JupyterHub.
+Custom Authenticator to use OpenID OAuth with JupyterHub.
 
-Derived from the GitHub OAuth authenticator.
+Derived from the GitHub OAuth authenticator, based on GoogleOAuthHandler.
 """
 
 import os
@@ -18,6 +18,7 @@ from jupyterhub.utils    import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
+
 class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     """ An OpenID OAuth2 mixin to use GoogleLoginHandler with
     different Identity Providers using the OpenID standard. The current
@@ -31,11 +32,21 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "http://%s/token" % OPENID_HOST
     _OAUTH_USERINFO_URL = "http://%s/token" % OPENID_HOST
 
+
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
     def get(self):
-        redirect_uri = self.authenticator.get_callback_url(self)
+        guess_uri = '{proto}://{host}{path}'.format(
+            proto=self.request.protocol,
+            host=self.request.host,
+            path=url_path_join(
+                self.hub.server.base_url,
+                'oauth_callback'
+            )
+        )
+
+        redirect_uri = self.authenticator.oauth_callback_url or guess_uri
         self.log.info('redirect_uri: %r', redirect_uri)
 
         self.authorize_redirect(
@@ -44,12 +55,30 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             scope=['openid', 'email'],
             response_type='code')
 
-
 class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
-    pass
 
+    @gen.coroutine
+    def get(self):
+        self.settings['google_oauth'] = {
+            'key': self.authenticator.client_id,
+            'secret': self.authenticator.client_secret,
+            'scope': ['openid', 'email']
+        }
+        #self.log.debug('openid: settings: "%s"', str(self.settings['google_oauth']))
 
-class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
+        # "Cannot redirect after headers have been written" ?
+        #OAuthCallbackHandler.get(self)
+        username = yield self.authenticator.get_authenticated_user(self, None)
+        self.log.info('openid: username: "%s"', username)
+        if username:
+            user = self.user_from_username(username)
+            self.set_login_cookie(user)
+            self.redirect(url_path_join(self.hub.server.base_url, 'home'))
+        else:
+            # todo: custom error
+            raise HTTPError(403)
+
+class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
     login_handler = OpenIDLoginHandler
     callback_handler = OpenIDOAuthHandler
@@ -70,13 +99,10 @@ class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         code = handler.get_argument('code', False)
         if not code:
             raise HTTPError(400, "oauth callback made without a token")
-        handler.settings['google_oauth'] = {
-            'key': self.client_id,
-            'secret': self.client_secret,
-            'scope': ['openid', 'email']
-        }
+        if not self.oauth_callback_url:
+            raise HTTPError(500, "No callback URL")
         user = yield handler.get_authenticated_user(
-            redirect_uri=self.get_callback_url(handler),
+            redirect_uri=self.oauth_callback_url,
             code=code)
         access_token = str(user['access_token'])
 
