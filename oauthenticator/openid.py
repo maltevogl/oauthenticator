@@ -160,9 +160,10 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         handler.settings['google_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
-            'scope': ['openid', 'email']
+            'scope': ['openid','profile', 'email']
         }
         self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
+        self.log.debug('code is: {}'.format(code))
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code)
