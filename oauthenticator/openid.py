@@ -31,6 +31,35 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = "http://%s/token" % OPENID_HOST
     _OAUTH_USERINFO_URL = "http://%s/token" % OPENID_HOST
 
+    @_auth_return_future
+    def get_authenticated_user(self, redirect_uri, code, callback):
+        """Handles the login for the Google user, returning an access token.
+        """
+        http = self.get_auth_http_client()
+        body = urllib_parse.urlencode({
+            "redirect_uri": redirect_uri,
+            "code": code,
+            "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
+            "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
+            "grant_type": "authorization_code",
+        })
+        self.log.info('http req body: %r', body)
+        self.log.info('acc tok url: %r', _OAUTH_ACCESS_TOKEN_URL)
+        self.log.info('callback url: %r', callback)
+        http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
+                   functools.partial(self._on_access_token, callback),
+                   method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body)
+
+
+    def _on_access_token(self, future, response):
+        """Callback function for the exchange to the access token."""
+        if response.error:
+            future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
+            return
+
+        args = escape.json_decode(response.body)
+        future.set_result(args)
+
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
