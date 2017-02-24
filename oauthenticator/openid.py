@@ -49,7 +49,7 @@ class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
     pass
 
 
-class GoogleOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
+class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
     login_handler = OpenIDLoginHandler
     callback_handler = OpenIDOAuthHandler
