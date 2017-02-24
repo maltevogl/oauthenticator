@@ -105,11 +105,12 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         self.log.info('callback url: %r', callback)
         http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
                    functools.partial(self._on_access_token, callback),
-                   method="GET", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body)
+                   method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body)
 
 
     def _on_access_token(self, future, response):
         """Callback function for the exchange to the access token."""
+        self.log.info('response body: %r', response)
         if response.error:
             future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
             return
