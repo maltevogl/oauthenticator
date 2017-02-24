@@ -8,7 +8,7 @@ import os
 import json
 
 from tornado             import gen
-from tornado.auth        import OpenIdMixin
+from tornado.auth        import GoogleOAuth2Mixin
 from tornado.web         import HTTPError
 
 from traitlets           import Unicode
@@ -19,7 +19,7 @@ from jupyterhub.utils    import url_path_join
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
-class OpenIDOAuth2Mixin(OpenIdMixin):
+class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     """ An OpenID OAuth2 mixin to use GoogleLoginHandler with
     different Identity Providers using the OpenID standard. The current
     setup should work with MITREid Connect servers. In addtion to the usual
