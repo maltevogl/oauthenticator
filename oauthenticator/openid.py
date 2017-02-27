@@ -167,7 +167,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             'scope': ['openid','profile', 'email'],
             'response_type': 'code'
         }
--
+
         self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
         self.log.debug('code is: {}'.format(code))
         user = yield handler.get_authenticated_user(
