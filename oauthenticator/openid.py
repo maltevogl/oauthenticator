@@ -9,6 +9,7 @@ import json
 
 from base64 import b64decode
 import re
+import jwt
 
 from tornado             import gen, escape
 from tornado.auth        import GoogleOAuth2Mixin
@@ -188,9 +189,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         #body = response.body.decode()
         #self.log.debug('response.body.decode(): {}'.format(body))
         #bodyjs = json.loads(body)
-        payload = b64decode(user['id_token'].split('.')[1])
+        payload = jwt.decode(user['id_token'],verify=False)
         self.log.debug('decoded payload is: {}'.format(payload))
-        username = re.findall('(?<=sub":")[A-Za-z0-9]{19}',b64decode(user['id_token'].split('.')[1]).decode("utf-8"))[0]
+        username = payload['sub']
 
         if self.hosted_domain:
             if not username.endswith('@'+self.hosted_domain) or \
