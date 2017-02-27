@@ -46,7 +46,7 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
     )
-    userdata_params = {'scope'=['openid','profile','email']}
+    userdata_params = {'scope':['openid','profile','email']}
     #Dict(
     #    os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
     #    help="Userdata params to get user data login information"
