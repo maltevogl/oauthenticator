@@ -132,7 +132,6 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=['openid','profile', 'email','offline_access','groups'],
-            claims=['email','name'],
             response_type='code')
 
 
