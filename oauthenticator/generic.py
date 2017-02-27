@@ -23,6 +23,7 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 class GenericEnvMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
+    _OAUTH_USERDATA_PARAMS = os.environ.get('OAUTH2_USERDATA_PARAMS', '')
 
 
 class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
@@ -45,10 +46,11 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
     )
-    userdata_params = Dict(
-        os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
-        help="Userdata params to get user data login information"
-    ).tag(config=True)
+    userdata_params = {'scope'=['openid','profile','email']}
+    #Dict(
+    #    os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
+    #    help="Userdata params to get user data login information"
+    #).tag(config=True)
 
     userdata_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_METHOD', 'GET'),
