@@ -7,6 +7,9 @@ Derived from the GitHub OAuth authenticator.
 import os
 import json
 
+from base64 import b64decode
+import re
+
 from tornado             import gen, escape
 from tornado.auth        import GoogleOAuth2Mixin
 from tornado.web         import HTTPError
@@ -129,6 +132,7 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=['openid','profile', 'email','offline_access','groups'],
+            claims=['email','name'],
             response_type='code')
 
 
@@ -160,7 +164,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         handler.settings['google_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
-            'scope': ['openid','profile', 'email','offline_access','groups']
+            'scope': ['openid','profile', 'email','offline_access','groups'],
+            'claims': ['email','name']
         }
         self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
         self.log.debug('code is: {}'.format(code))
@@ -173,19 +178,20 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         http_client = handler.get_auth_http_client()
 
-        response = yield http_client.fetch(
-            self._OAUTH_USERINFO_URL + '?access_token=' + access_token
-        )
+        #response = yield http_client.fetch(
+        #    self._OAUTH_USERINFO_URL + '?access_token=' + access_token
+        #)
 
-        if not response:
-            self.clear_all_cookies()
-            raise HTTPError(500, 'Google authentication failed')
+        #if not response:
+        #    self.clear_all_cookies()
+        #    raise HTTPError(500, 'Google authentication failed')
 
-        body = response.body.decode()
-        self.log.debug('response.body.decode(): {}'.format(body))
-        bodyjs = json.loads(body)
-
-        username = bodyjs['sub']
+        #body = response.body.decode()
+        #self.log.debug('response.body.decode(): {}'.format(body))
+        #bodyjs = json.loads(body)
+        payload = b64decode(user['id_token'].split('.')[1])
+        self.log.debug('decoded payload is: {}'.format(payload))
+        username = re.findall('(?<=sub":")[A-Za-z0-9]{19}',b64decode(user['id_token'].split('.')[1]).decode("utf-8"))[0]
 
         if self.hosted_domain:
             if not username.endswith('@'+self.hosted_domain) or \
