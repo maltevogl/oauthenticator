@@ -168,6 +168,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             redirect_uri=self.get_callback_url(handler),
             code=code)
         access_token = str(user['access_token'])
+        self.log.debug('token is: {}'.format(access_token))
+        self.log.debug('full user json is: {}'.format(user))
 
         http_client = handler.get_auth_http_client()
 
