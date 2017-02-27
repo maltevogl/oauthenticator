@@ -133,7 +133,7 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=['openid','profile', 'email'],
-            response_type='id_token')
+            response_type='code')
 
 
 class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
@@ -165,8 +165,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             'key': self.client_id,
             'secret': self.client_secret,
             'scope': ['openid','profile', 'email'],
-            'claims': ['user_id','name']
+            'response_type': 'code'
         }
+-
         self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
         self.log.debug('code is: {}'.format(code))
         user = yield handler.get_authenticated_user(
