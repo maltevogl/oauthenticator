@@ -164,7 +164,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             'key': self.client_id,
             'secret': self.client_secret,
             'scope': ['openid','profile', 'email','offline_access','groups'],
-            'claims': ['email','name']
+            'claims': ['user_id','name']
         }
         self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
         self.log.debug('code is: {}'.format(code))
