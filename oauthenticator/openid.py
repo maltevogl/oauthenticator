@@ -86,7 +86,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     OPENID_HOST=_OPENID_ENDPOINT
     _OAUTH_AUTHORIZE_URL = "http://%s/auth" % OPENID_HOST
     _OAUTH_ACCESS_TOKEN_URL = "http://%s/token" % OPENID_HOST
-    _OAUTH_USERINFO_URL = "http://%s/token" % OPENID_HOST
+    _OAUTH_USERINFO_URL = "http://%s/auth" % OPENID_HOST
 
     @_auth_return_future
     def get_authenticated_user(self, redirect_uri, code, callback):
