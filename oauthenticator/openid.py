@@ -197,7 +197,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         self.log.debug('decoded payload is: {}'.format(payload))
         substring = payload['sub']
 
-        for connector in [CONNECTORS]:
+        for connector in self.CONNECTORS.split(','):
             connID = b64encode(connector.encode('utf8')).decode('utf8')
             try: 
                 connID[-1] == '='        
