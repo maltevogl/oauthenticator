@@ -7,7 +7,7 @@ Derived from the GitHub OAuth authenticator.
 import os
 import json
 
-from base64 import b64decode
+from base64 import b64decode, b64encode
 import re
 import jwt
 
@@ -86,6 +86,9 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     parameters client ID and secret, the environment variable OPENID_HOST
     should be set to the URL of the OpenID provider. The API endpoints
     might have to be changed, depending on the ID provider."""
+    
+    CONNECTORS = os.environ.get('CONNECTOR_LIST')
+
     _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
     OPENID_HOST=_OPENID_ENDPOINT
     _OAUTH_AUTHORIZE_URL = "http://%s/auth" % OPENID_HOST
@@ -192,7 +195,31 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         #bodyjs = json.loads(body)
         payload = jwt.decode(user['id_token'],verify=False)
         self.log.debug('decoded payload is: {}'.format(payload))
-        username = payload['sub']
+        substring = payload['sub']
+
+        for connector in [CONNECTORS]:
+            connID = b64encode(connector.encode('utf8')).decode('utf8')
+            try: 
+                connID[-1] == '='        
+                pat = re.compile('^.+(?={})'.format(connID[:-1]))
+            except:
+                pat = re.compile('^.+(?={})'.format(connID))
+                
+            idstring = re.findall(pat,substring)
+            
+            if idstring:
+                ids = b64decode(idstring[0].encode('utf8')).decode('utf8').split('\x12')
+                if ids:
+                    idslist = ids[0].split('\x05')
+                    if idslist:
+                        idfin = [x for x in idslist if x.isprintable()]
+                        if idfin:
+                            self.log.debug('User {0} from connector {1}'.format(idfin[0], connector))
+                            username = idfin[0]
+                else:
+                    print('Could not identify id part of string.')
+            else:
+                pass
 
         if self.hosted_domain:
             if not username.endswith('@'+self.hosted_domain) or \
