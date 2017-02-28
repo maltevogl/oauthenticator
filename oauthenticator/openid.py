@@ -195,6 +195,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         #bodyjs = json.loads(body)
         payload = jwt.decode(user['id_token'],verify=False)
         self.log.debug('decoded payload is: {}'.format(payload))
+
         substring = payload['sub']
 
         for connector in self.CONNECTORS.split(','):
@@ -208,16 +209,23 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             idstring = re.findall(pat,substring)
             
             if idstring:
-                ids = b64decode(idstring[0].encode('utf8')).decode('utf8').split('\x12')
-                if ids:
-                    idslist = ids[0].split('\x05')
-                    if idslist:
-                        idfin = [x for x in idslist if x.isprintable()]
-                        if idfin:
-                            self.log.debug('User {0} from connector {1}'.format(idfin[0], connector))
-                            username = idfin[0]
+                if connector == 'github':
+                    username = payload['name']
                 else:
-                    print('Could not identify id part of string.')
+                    ids = b64decode(idstring[0].encode('utf8')).decode('utf8').split('\x12')
+                    if ids:
+                        idslist = ids[0].split('\x05')
+                        if idslist:
+                            idfin = [x for x in idslist if x.isprintable()]
+                            if idfin:
+                                self.log.debug('User {0} from connector {1}'.format(idfin[0], connector))
+                                username = idfin[0]
+                            else:
+                                print('Found no printable username.')
+                        else:
+                            print('ID List empty.')
+                    else:
+                        print('Could not identify id part of string.')
             else:
                 pass
 
