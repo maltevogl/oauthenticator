@@ -106,9 +106,9 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
             "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
             "grant_type": "authorization_code",
         })
-        self.log.info('http req body: %r', body)
-        self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
-        self.log.info('callback url: %r', callback)
+        #self.log.info('http req body: %r', body)
+        #self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
+        #self.log.info('callback url: %r', callback)
         http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
                    functools.partial(self._on_access_token, callback),
                    method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body)
@@ -116,7 +116,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
 
     def _on_access_token(self, future, response):
         """Callback function for the exchange to the access token."""
-        self.log.info('response body: %r', response)
+        #self.log.info('response body: %r', response)
         if response.error:
             future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
             return
@@ -129,7 +129,7 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
        authorize_redirect.'''
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
-        self.log.info('redirect_uri: %r', redirect_uri)
+        #self.log.info('redirect_uri: %r', redirect_uri)
 
         self.authorize_redirect(
             redirect_uri=redirect_uri,
@@ -171,12 +171,12 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         }
 
         self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
-        self.log.debug('code is: {}'.format(code))
+        #self.log.debug('code is: {}'.format(code))
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code)
         access_token = str(user['access_token'])
-        self.log.debug('token is: {}'.format(access_token))
+        #self.log.debug('token is: {}'.format(access_token))
         self.log.debug('full user json is: {}'.format(user))
 
         http_client = handler.get_auth_http_client()
@@ -195,39 +195,23 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         payload_encoded = user['id_token'].split('.')[1]
         payload = urlsafe_b64decode(payload_encoded + '=' * (4 - len(payload_encoded) % 4)).decode('utf8')
         self.log.debug('urlsafe decoded payload is: {}'.format(payload))
-
-        substring = payload['sub']
+        userstring = re.findall('(?<=sub":").+?(?=",)',payload)[0]
+        substring = urlsafe_b64decode(userstring + '=' * (4 - len(userstring) % 4)).decode('utf8')
+        self.log.debug('urlsafe decoded substring is: {}'.format(substring))
+        substring_print = ''.join([i for i in substring if i.isprintable()])
+        
+        username = ''        
 
         for connector in self.CONNECTORS.split(','):
-            connID = b64encode(connector.encode('utf8')).decode('utf8')
-            try: 
-                connID[-1] == '='        
-                pat = re.compile('^.+(?={})'.format(connID[:-1]))
-            except:
-                pat = re.compile('^.+(?={})'.format(connID))
-                
-            idstring = re.findall(pat,substring)
-            
-            if idstring:
-                if connector == 'github':
-                    username = payload['name']
-                else:
-                    ids = b64decode(idstring[0].encode('utf8')).decode('utf8').split('\x12')
-                    if ids:
-                        idslist = ids[0].split('\x05')
-                        if idslist:
-                            idfin = [x for x in idslist if x.isprintable()]
-                            if idfin:
-                                self.log.debug('User {0} from connector {1}'.format(idfin[0], connector))
-                                username = idfin[0]
-                            else:
-                                print('Found no printable username.')
-                        else:
-                            print('ID List empty.')
-                    else:
-                        print('Could not identify id part of string.')
+            if connector == 'github':
+                username = re.findall('(?<=name":").+?(?=")', payload)[0]
+            elif re.findall(connector,substring_print):
+                username = re.sub(connector,'',substring_print)
             else:
                 pass
+        
+        if not username:
+            raise Exception('Connector error: Could not extract username from id_token, sub or name entry.')
 
         if self.hosted_domain:
             if not username.endswith('@'+self.hosted_domain) or \
