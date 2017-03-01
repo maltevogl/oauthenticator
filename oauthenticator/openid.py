@@ -7,9 +7,8 @@ Derived from the GitHub OAuth authenticator.
 import os
 import json
 
-from base64 import b64decode, b64encode
+from base64 import b64decode, b64encode, urlsafe_b64decode
 import re
-import jwt
 
 from tornado             import gen, escape
 from tornado.auth        import GoogleOAuth2Mixin
@@ -135,7 +134,7 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
-            scope=['openid','profile', 'email'],
+            scope=['openid','profile', 'email','offline_access','groups'],
             response_type='code')
 
 
@@ -167,7 +166,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         handler.settings['google_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
-            'scope': ['openid','profile', 'email'],
+            'scope': ['openid','profile', 'email','offline_access','groups'],
             'response_type': 'code'
         }
 
@@ -193,7 +192,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         #body = response.body.decode()
         #self.log.debug('response.body.decode(): {}'.format(body))
         #bodyjs = json.loads(body)
-        payload = jwt.decode(user['id_token'],verify=False)
+        payload_encoded = user['id_token'].split('.')[1]
+        payload = urlsafe_b64decode(payload_encoded + '=' * (4 - len(payload_encoded) % 4)).decode('utf8')
         self.log.debug('decoded payload is: {}'.format(payload))
 
         substring = payload['sub']
