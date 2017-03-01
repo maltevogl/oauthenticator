@@ -194,7 +194,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         #bodyjs = json.loads(body)
         payload_encoded = user['id_token'].split('.')[1]
         payload = urlsafe_b64decode(payload_encoded + '=' * (4 - len(payload_encoded) % 4)).decode('utf8')
-        self.log.debug('decoded payload is: {}'.format(payload))
+        self.log.debug('urlsafe decoded payload is: {}'.format(payload))
 
         substring = payload['sub']
 
