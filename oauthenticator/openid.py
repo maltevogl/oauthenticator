@@ -111,7 +111,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         #self.log.info('callback url: %r', callback)
         http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
                    functools.partial(self._on_access_token, callback),
-                   method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body)
+                   method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body, validate_cert = False)
 
 
     def _on_access_token(self, future, response):
