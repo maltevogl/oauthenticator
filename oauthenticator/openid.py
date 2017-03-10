@@ -197,8 +197,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         self.log.debug('urlsafe decoded payload is: {}'.format(payload))
         userstring = re.findall('(?<=sub":").+?(?=",)',payload)[0]
         substring = urlsafe_b64decode(userstring + '=' * (4 - len(userstring) % 4)).decode('utf8')
-        self.log.debug('urlsafe decoded substring is: {}'.format(substring))
+
         substring_print = ''.join([i for i in substring if i.isprintable()])
+        self.log.debug('urlsafe decoded, printable substring is: {}'.format(substring_print))
         
         username = ''        
 
@@ -209,7 +210,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 else:
                     pass
             elif re.findall(connector,substring_print):
-                username = re.sub(connector,'',substring_print)
+                username = re.sub(connector,'_' + connector,substring_print)
             else:
                 pass
         
