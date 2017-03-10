@@ -206,7 +206,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         for connector in self.CONNECTORS.split(','):
             if connector == 'github':
                 if re.findall('(?<=name":").+?(?=")', payload):
-                    username = re.findall('(?<=name":").+?(?=")', payload)[0]
+                    returned_name = re.findall('(?<=name":").+?(?=")', payload)[0]
+                    username = re.sub(' ','',returned_name) + '_' + 'github'
                 else:
                     pass
             elif re.findall(connector,substring_print):
