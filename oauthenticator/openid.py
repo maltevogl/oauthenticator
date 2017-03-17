@@ -89,10 +89,14 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     CONNECTORS = os.environ.get('CONNECTOR_LIST')
 
     _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
-    OPENID_HOST=_OPENID_ENDPOINT
-    _OAUTH_AUTHORIZE_URL = "https://%s/auth" % OPENID_HOST
-    _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % OPENID_HOST
-    _OAUTH_USERINFO_URL = "https://%s/auth" % OPENID_HOST
+    if _OPENID_ENDPOINT.startswith('http'):
+        _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "%s/auth" % _OPENID_ENDPOINT
+    else:     
+        _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
 
     @_auth_return_future
     def get_authenticated_user(self, redirect_uri, code, callback):
