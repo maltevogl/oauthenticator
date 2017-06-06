@@ -5,7 +5,7 @@ from pytest import fixture, mark
 
 from ..bitbucket import BitbucketOAuthenticator
 
-from .mocks import setup_oauth_mock, no_code_test
+from .mocks import setup_oauth_mock
 
 
 def user_model(username):
@@ -33,15 +33,10 @@ def test_bitbucket(bitbucket_client):
 
 
 @mark.gen_test
-def test_no_code(bitbucket_client):
-    yield no_code_test(BitbucketOAuthenticator())
-
-
-@mark.gen_test
 def test_team_whitelist(bitbucket_client):
     client = bitbucket_client
     authenticator = BitbucketOAuthenticator()
-    authenticator.team_whitelist = ['blue']
+    authenticator.bitbucket_team_whitelist = ['blue']
 
     teams = {
         'red': ['grif', 'simmons', 'donut', 'sarge', 'lopez'],
@@ -80,7 +75,3 @@ def test_team_whitelist(bitbucket_client):
     handler = client.handler_for_user(user_model('donut'))
     name = yield authenticator.authenticate(handler)
     assert name == 'donut'
-
-
-
-    

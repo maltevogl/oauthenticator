@@ -7,6 +7,7 @@ Most of the code c/o Kyle Kelley (@rgbkrk)
 
 import json
 import os
+import re
 
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
@@ -16,16 +17,25 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode
+from traitlets import Unicode, Set
 
+from .common import next_page_from_links
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 # Support github.com and github enterprise installations
 GITHUB_HOST = os.environ.get('GITHUB_HOST') or 'github.com'
 if GITHUB_HOST == 'github.com':
-    GITHUB_API = 'api.github.com/user'
+    GITHUB_API = 'api.github.com'
 else:
-    GITHUB_API = '%s/api/v3/user' % GITHUB_HOST
+    GITHUB_API = '%s/api/v3' % GITHUB_HOST
+
+
+def _api_headers(access_token):
+    return {"Accept": "application/json",
+            "User-Agent": "JupyterHub",
+            "Authorization": "token {}".format(access_token)
+           }
+
 
 class GitHubMixin(OAuth2Mixin):
     _OAUTH_AUTHORIZE_URL = "https://%s/login/oauth/authorize" % GITHUB_HOST
@@ -53,12 +63,16 @@ class GitHubOAuthenticator(OAuthenticator):
     client_id_env = 'GITHUB_CLIENT_ID'
     client_secret_env = 'GITHUB_CLIENT_SECRET'
     login_handler = GitHubLoginHandler
+
+    github_organization_whitelist = Set(
+        config=True,
+        help="Automatically whitelist members of selected organizations",
+    )
+
     
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        code = handler.get_argument("code", False)
-        if not code:
-            raise web.HTTPError(400, "oauth callback made without a token")
+        code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
         
@@ -88,18 +102,45 @@ class GitHubOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
         
         # Determine who the logged in user is
-        headers={"Accept": "application/json",
-                 "User-Agent": "JupyterHub",
-                 "Authorization": "token {}".format(access_token)
-        }
-        req = HTTPRequest("https://%s" % GITHUB_API,
+        req = HTTPRequest("https://%s/user" % GITHUB_API,
                           method="GET",
-                          headers=headers
+                          headers=_api_headers(access_token)
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        return resp_json["login"]
+        username =  resp_json["login"]
+
+        # Check if user is a member of any whitelisted organizations.
+        # This check is performed here, as it requires `access_token`.
+        if self.github_organization_whitelist:
+            for org in self.github_organization_whitelist:
+                user_in_org = yield self._check_organization_whitelist(org, username, access_token)
+                if user_in_org:
+                    return username
+            else:  # User not found in member list for any organisation
+                return None
+        else:  # no organization whitelisting
+            return username
+
+
+    @gen.coroutine
+    def _check_organization_whitelist(self, org, username, access_token):
+        http_client = AsyncHTTPClient()
+        headers = _api_headers(access_token)
+        # Get all the members for organization 'org'
+        next_page = "https://%s/orgs/%s/members" % (GITHUB_API, org)
+        while next_page:
+            req = HTTPRequest(next_page, method="GET", headers=headers)
+            resp = yield http_client.fetch(req)
+            resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+            next_page = next_page_from_links(resp)
+            org_members = set(entry["login"] for entry in resp_json)
+            # check if any of the organizations seen thus far are in whitelist
+            if username in org_members:
+                return True
+        return False
+
 
 
 class LocalGitHubOAuthenticator(LocalAuthenticator, GitHubOAuthenticator):
