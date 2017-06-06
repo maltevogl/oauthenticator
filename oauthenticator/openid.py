@@ -25,20 +25,20 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 ## debug only ##
 #from tornado.util import unicode_type, ArgReplacer, PY3
 #from tornado.concurrent import TracebackFuture, return_future, chain_future
-#import functools
+import functools
 #from tornado.stack_context import ExceptionStackContext
 #
-#if PY3:
-#    import urllib.parse as urlparse
-#    import urllib.parse as urllib_parse
-#    long = int
-#else:
-#    import urlparse
-#    import urllib as urllib_parse
+if PY3:
+    import urllib.parse as urlparse
+    import urllib.parse as urllib_parse
+    long = int
+else:
+    import urlparse
+    import urllib as urllib_parse
 #
 #
-#class AuthError(Exception):
-#    pass
+class AuthError(Exception):
+    pass
 #
 #
 #def _auth_future_to_callback(callback, future):
@@ -98,7 +98,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
         _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
 
-    @_auth_return_future
+    #@_auth_return_future
     def get_authenticated_user(self, redirect_uri, code, callback):
         """Handles the login for the Google user, returning an access token.
         """
@@ -222,15 +222,15 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         if not username:
             raise Exception('Connector error: Could not extract username from id_token, sub or name entry.')
 
-        if self.hosted_domain:
-            if not username.endswith('@'+self.hosted_domain) or \
-                bodyjs['hd'] != self.hosted_domain:
-                raise HTTPError(403,
-                    "You are not signed in to your {} account.".format(
-                        self.hosted_domain)
-                )
-            else:
-                username = username.split('@')[0]
+        #if self.hosted_domain:
+        #    if not username.endswith('@'+self.hosted_domain) or \
+        #        bodyjs['hd'] != self.hosted_domain:
+        #        raise HTTPError(403,
+        #            "You are not signed in to your {} account.".format(
+        #                self.hosted_domain)
+        #        )
+        #    else:
+        #        username = username.split('@')[0]
 
         return username
 
