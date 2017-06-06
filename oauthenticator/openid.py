@@ -23,7 +23,7 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
 ## debug only ##
-#from tornado.util import unicode_type, ArgReplacer, PY3
+from tornado.util import PY3 #unicode_type, ArgReplacer, PY3
 #from tornado.concurrent import TracebackFuture, return_future, chain_future
 import functools
 #from tornado.stack_context import ExceptionStackContext
