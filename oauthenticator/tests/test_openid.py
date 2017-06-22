@@ -5,8 +5,8 @@ from tornado.web import Application, HTTPError
 
 from ..openid import OpenIDOAuthenticator, OpenIDOAuthHandler
 
-CONNECTOR = github
-_OPENID_ENDPOINT = openid.com
+CONNECTOR = 'github'
+_OPENID_ENDPOINT = 'openid.com'
 
 from .mocks import setup_oauth_mock
 
