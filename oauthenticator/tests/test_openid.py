@@ -1,12 +1,10 @@
 from unittest.mock import Mock
+import os
 
 from pytest import fixture, mark, raises
 from tornado.web import Application, HTTPError
 
 from ..openid import OpenIDOAuthenticator, OpenIDOAuthHandler
-
-CONNECTOR = 'github'
-_OPENID_ENDPOINT = 'openid.com'
 
 from .mocks import setup_oauth_mock
 
