@@ -40,7 +40,7 @@ def openid_client(client):
 @mark.gen_test
 def test_openid(openid_client):
     authenticator = OpenIDOAuthenticator()
-    handler = openid_client.handler_for_user(user_model('fake'))
+    handler = openid_client.handler_for_user(user_model('fake_github@openid.com'))
     name = yield authenticator.authenticate(handler)
     assert name == 'fake_github'
 
