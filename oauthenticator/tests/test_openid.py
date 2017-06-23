@@ -20,7 +20,7 @@ def openid_client(client):
     setup_oauth_mock(client,
         host=['openid.com', 'www.openid.com'],
         access_token_path='token',
-        #user_path='/oauth2/v1/userinfo',
+        user_path='/oauth2/v1/userinfo',
     )
     original_handler_for_user = client.handler_for_user
     # testing Google is harder because it invokes methods inherited from tornado
