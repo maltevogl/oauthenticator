@@ -32,7 +32,7 @@ GITLAB_API = '%s/api/v3' % GITLAB_HOST
 def _api_headers(access_token):
     return {"Accept": "application/json",
             "User-Agent": "JupyterHub",
-            "Authorization": "token {}".format(access_token)
+            "Authorization": "Bearer {}".format(access_token)
            }
 
 
@@ -107,7 +107,7 @@ class GitLabOAuthenticator(OAuthenticator):
 
         username = resp_json["username"]
         user_id = resp_json["id"]
-        is_admin = resp_json["is_admin"]
+        is_admin = resp_json.get("is_admin", False)
 
         # Check if user is a member of any whitelisted organizations.
         # This check is performed here, as it requires `access_token`.

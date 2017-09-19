@@ -4,11 +4,13 @@ Base classes for Custom Authenticator to use GitHub OAuth with JupyterHub
 Most of the code c/o Kyle Kelley (@rgbkrk)
 """
 
+import base64
 import json
 import os
 import uuid
 
 from tornado import gen, web
+from tornado.log import app_log
 
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.auth import Authenticator
@@ -29,6 +31,31 @@ def guess_callback_uri(protocol, host, hub_server_url):
 
 STATE_COOKIE_NAME = 'oauthenticator-state'
 
+
+def _serialize_state(state):
+    """Serialize OAuth state to a base64 string after passing through JSON"""
+    json_state = json.dumps(state)
+    return base64.urlsafe_b64encode(
+        json_state.encode('utf8')
+    ).decode('ascii')
+
+
+def _deserialize_state(b64_state):
+    """Deserialize OAuth state as serialized in _serialize_state"""
+    if isinstance(b64_state, str):
+        b64_state = b64_state.encode('ascii')
+    try:
+        json_state = base64.urlsafe_b64decode(b64_state).decode('utf8')
+    except ValueError:
+        app_log.error("Failed to b64-decode state: %r", b64_state)
+        return {}
+    try:
+        return json.loads(json_state)
+    except ValueError:
+        app_log.error("Failed to json-decode state: %r", json_state)
+        return {}
+
+
 class OAuthLoginHandler(BaseHandler):
     """Base class for OAuth login handler
 
@@ -37,13 +64,15 @@ class OAuthLoginHandler(BaseHandler):
     scope = []
 
     def set_state_cookie(self, state):
-        self.set_secure_cookie(STATE_COOKIE_NAME, state)
-    
+        self.set_secure_cookie(STATE_COOKIE_NAME,
+            state, expires_days=1, httponly=True,
+        )
+
     _state = None
     def get_state(self):
         next_url = self.get_argument('next', None)
         if self._state is None:
-            self._state = json.dumps({
+            self._state = _serialize_state({
                 'state_id': uuid.uuid4().hex,
                 'next_url': next_url,
             })
@@ -86,7 +115,7 @@ class OAuthCallbackHandler(BaseHandler):
 
     def check_state(self):
         """Verify OAuth state
-        
+
         compare value in cookie with redirect url param
         """
         cookie_state = self.get_state_cookie()
@@ -114,27 +143,48 @@ class OAuthCallbackHandler(BaseHandler):
         """
         self.check_code()
         self.check_state()
-    
-    def get_next_url(self):
+
+    def get_next_url(self, user=None):
         """Get the redirect target from the state field"""
         state = self.get_state_url()
         if state:
-            return json.loads(state).get('next_url')
+            next_url = _deserialize_state(state).get('next_url')
+            if next_url:
+                return next_url
+        # JupyterHub 0.8 adds default .get_next_url for a fallback
+        if hasattr(BaseHandler, 'get_next_url'):
+            return super().get_next_url(user)
+        return url_path_join(self.hub.server.base_url, 'home')
+
+    @gen.coroutine
+    def _login_user_pre_08(self):
+        """login_user simplifies the login+cookie+auth_state process in JupyterHub 0.8
+
+        _login_user_07 is for backward-compatibility with JupyterHub 0.7
+        """
+        user_info = yield self.authenticator.get_authenticated_user(self, None)
+        if user_info is None:
+            return
+        if isinstance(user_info, dict):
+            username = user_info['name']
+        else:
+            username = user_info
+        user = self.user_from_username(username)
+        self.set_login_cookie(user)
+        return user
+
+    if not hasattr(BaseHandler, 'login_user'):
+        # JupyterHub 0.7 doesn't have .login_user
+        login_user = _login_user_pre_08
 
     @gen.coroutine
     def get(self):
         self.check_arguments()
-
-        username = yield self.authenticator.get_authenticated_user(self, None)
-
-        if username:
-            user = self.user_from_username(username)
-            self.set_login_cookie(user)
-            next_url = self.get_next_url() or url_path_join(self.hub.server.base_url, 'home')
-            self.redirect(next_url)
-        else:
+        user = yield self.login_user()
+        if user is None:
             # todo: custom error page?
             raise web.HTTPError(403)
+        self.redirect(self.get_next_url(user))
 
 
 class OAuthenticator(Authenticator):
@@ -155,15 +205,23 @@ class OAuthenticator(Authenticator):
         Typically `https://{host}/hub/oauth_callback`"""
     )
 
-    client_id_env = 'OAUTH_CLIENT_ID'
+    client_id_env = ''
     client_id = Unicode(config=True)
     def _client_id_default(self):
-        return os.getenv(self.client_id_env, '')
+        if self.client_id_env:
+            client_id = os.getenv(self.client_id_env, '')
+            if client_id:
+                return client_id
+        return os.getenv('OAUTH_CLIENT_ID', '')
 
-    client_secret_env = 'OAUTH_CLIENT_SECRET'
+    client_secret_env = ''
     client_secret = Unicode(config=True)
     def _client_secret_default(self):
-        return os.getenv(self.client_secret_env, '')
+        if self.client_secret_env:
+            client_secret = os.getenv(self.client_secret_env, '')
+            if client_secret:
+                return client_secret
+        return os.getenv('OAUTH_CLIENT_SECRET', '')
 
     validate_server_cert_env = 'OAUTH_TLS_VERIFY'
     validate_server_cert = Bool(config=True)
