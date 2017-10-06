@@ -26,8 +26,13 @@ def okpy_client(client):
 def test_okpy(okpy_client):
     authenticator = OkpyOAuthenticator()
     handler = okpy_client.handler_for_user(user_model('testing@example.com'))
-    name = yield authenticator.authenticate(handler)
+    user_info = yield authenticator.authenticate(handler)
+    assert sorted(user_info) == ['auth_state', 'name']
+    name = user_info['name']
     assert name == 'testing@example.com'
+    auth_state = user_info['auth_state']
+    assert 'access_token' in auth_state
+    assert 'okpy_user' in auth_state
 
 
 @mark.gen_test
