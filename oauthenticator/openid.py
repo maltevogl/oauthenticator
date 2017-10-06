@@ -139,7 +139,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             redirect_uri=self.get_callback_url(handler),
             code=code)
         access_token = str(user['access_token'])
-        #self.log.debug('token is: {}'.format(access_token))
+        self.log.debug('token is: {}'.format(access_token))
         self.log.debug('full user json is: {}'.format(user))
 
         http_client = handler.get_auth_http_client()
@@ -157,12 +157,12 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         #bodyjs = json.loads(body)
         payload_encoded = user['id_token'].split('.')[1]
         payload = urlsafe_b64decode(payload_encoded + '=' * (4 - len(payload_encoded) % 4)).decode('utf8')
-        #self.log.debug('urlsafe decoded payload is: {}'.format(payload))
+        self.log.debug('urlsafe decoded payload is: {}'.format(payload))
         userstring = re.findall('(?<=sub":").+?(?=",)',payload)[0]
         substring = urlsafe_b64decode(userstring + '=' * (4 - len(userstring) % 4)).decode('utf8')
 
         substring_print = ''.join([i for i in substring if i.isprintable()])
-        #self.log.debug('urlsafe decoded, printable substring is: {}'.format(substring_print))
+        self.log.debug('urlsafe decoded, printable substring is: {}'.format(substring_print))
 
         username = ''
 
