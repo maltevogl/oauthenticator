@@ -90,15 +90,14 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
     scope=['openid','profile', 'email','offline_access','groups']
-    # def get(self):
-    #     redirect_uri = self.authenticator.get_callback_url(self)
-    #     #self.log.info('redirect_uri: %r', redirect_uri)
-    #
-    #     self.authorize_redirect(
-    #         redirect_uri=redirect_uri,
-    #         client_id=self.authenticator.client_id,
-    #         scope=['openid','profile', 'email','offline_access','groups'],
-    #         response_type='code')
+    def get(self):
+        redirect_uri = self.authenticator.get_callback_url(self)
+        self.log.info('redirect_uri: %r', redirect_uri)
+        self.authorize_redirect(
+            redirect_uri=redirect_uri,
+            client_id=self.authenticator.client_id,
+            scope=['openid','profile', 'email','offline_access','groups'],
+            response_type='code')
 
 
 class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
@@ -133,8 +132,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             'response_type': 'code'
         }
 
-        #self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
-        #self.log.debug('code is: {}'.format(code))
+        self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
+        self.log.debug('code is: {}'.format(code))
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code)
