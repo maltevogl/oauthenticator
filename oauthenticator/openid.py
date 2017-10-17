@@ -57,34 +57,34 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
         _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
 
-    # def get_authenticated_user(self, redirect_uri, code, callback):
-    #     """Handles the login for the Google user, returning an access token.
-    #     """
-    #     http = self.get_auth_http_client()
-    #     body = urllib_parse.urlencode({
-    #         "redirect_uri": redirect_uri,
-    #         "code": code,
-    #         "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
-    #         "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
-    #         "grant_type": "authorization_code",
-    #     })
-    #     #self.log.info('http req body: %r', body)
-    #     #self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
-    #     #self.log.info('callback url: %r', callback)
-    #     http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
-    #                functools.partial(self._on_access_token, callback),
-    #                method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body, validate_cert = False)
-    #
-    #
-    # def _on_access_token(self, future, response):
-    #     """Callback function for the exchange to the access token."""
-    #     #self.log.info('response body: %r', response)
-    #     if response.error:
-    #         future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
-    #         return
-    #
-    #     args = escape.json_decode(response.body)
-    #     future.set_result(args)
+    def get_authenticated_user(self, redirect_uri, code, callback):
+        """Handles the login for the Google user, returning an access token.
+        """
+        http = self.get_auth_http_client()
+        body = urllib_parse.urlencode({
+            "redirect_uri": redirect_uri,
+            "code": code,
+            "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
+            "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
+            "grant_type": "authorization_code",
+        })
+        self.log.info('http req body: %r', body)
+        self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
+        self.log.info('callback url: %r', callback)
+        http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
+                   functools.partial(self._on_access_token, callback),
+                   method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body, validate_cert = False)
+
+
+    def _on_access_token(self, future, response):
+        """Callback function for the exchange to the access token."""
+        self.log.info('response body: %r', response)
+        if response.error:
+            future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
+            return
+
+        args = escape.json_decode(response.body)
+        future.set_result(args)
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
@@ -132,14 +132,14 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             'response_type': 'code'
         }
 
-        self.log.debug('openid: settings: "%s"', str(handler.settings['google_oauth']))
-        self.log.debug('code is: {}'.format(code))
+        self.log.info('openid: settings: "%s"', str(handler.settings['google_oauth']))
+        self.log.info('code is: {}'.format(code))
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code)
         access_token = str(user['access_token'])
-        self.log.debug('token is: {}'.format(access_token))
-        self.log.debug('full user json is: {}'.format(user))
+        self.log.info('token is: {}'.format(access_token))
+        self.log.info('full user json is: {}'.format(user))
 
         http_client = handler.get_auth_http_client()
 
@@ -156,12 +156,12 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         #bodyjs = json.loads(body)
         payload_encoded = user['id_token'].split('.')[1]
         payload = urlsafe_b64decode(payload_encoded + '=' * (4 - len(payload_encoded) % 4)).decode('utf8')
-        self.log.debug('urlsafe decoded payload is: {}'.format(payload))
+        self.log.info('urlsafe decoded payload is: {}'.format(payload))
         userstring = re.findall('(?<=sub":").+?(?=",)',payload)[0]
         substring = urlsafe_b64decode(userstring + '=' * (4 - len(userstring) % 4)).decode('utf8')
 
         substring_print = ''.join([i for i in substring if i.isprintable()])
-        self.log.debug('urlsafe decoded, printable substring is: {}'.format(substring_print))
+        self.log.info('urlsafe decoded, printable substring is: {}'.format(substring_print))
 
         username = ''
 
