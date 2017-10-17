@@ -78,7 +78,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
 
     def _on_access_token(self, future, response):
         """Callback function for the exchange to the access token."""
-        self.log.info('response body: %r', response)
+        #self.log.info('response body: %r', response)
         if response.error:
             future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
             return
@@ -92,11 +92,14 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     scope=['openid','profile', 'email','offline_access','groups']
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
-        self.log.info('redirect_uri: %r', redirect_uri)
+        state = self.get_state()
+        self.set_state_cookie(state)
+        self.log.info('OAuth redirect: %r', redirect_uri)
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=['openid','profile', 'email','offline_access','groups'],
+            extra_params={'state': state},
             response_type='code')
 
 
