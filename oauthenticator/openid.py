@@ -99,7 +99,7 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
             scope=['openid','profile', 'email','offline_access','groups'],
-            extra_params={'state': state},
+            extra_params={'state': state,' validate_cert':validate_server_cert},
             response_type='code')
 
 
