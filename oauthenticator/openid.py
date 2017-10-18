@@ -11,7 +11,7 @@ from base64 import b64decode, b64encode, urlsafe_b64decode
 import re
 
 from tornado             import gen, escape
-from tornado.auth        import OpenIdMixin
+from tornado.auth        import GoogleOAuth2Mixin
 from tornado.web         import HTTPError
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
