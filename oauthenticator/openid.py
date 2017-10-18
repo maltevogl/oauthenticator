@@ -90,6 +90,9 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
        authorize_redirect.'''
     scope=['openid','profile', 'email','offline_access','groups']
+
+    validate_server_cert = self.validate_server_cert
+
     def get(self):
         redirect_uri = self.authenticator.get_callback_url(self)
         state = self.get_state()
@@ -128,6 +131,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         code = handler.get_argument('code')
         if not code:
             raise HTTPError(400, "oauth callback made without a token")
+
         handler.settings['google_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
@@ -137,10 +141,13 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         self.log.info('openid: settings: "%s"', str(handler.settings['google_oauth']))
         self.log.info('code is: {}'.format(code))
+
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code)
+
         access_token = str(user['access_token'])
+
         self.log.info('token is: {}'.format(access_token))
         self.log.info('full user json is: {}'.format(user))
 
