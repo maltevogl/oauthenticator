@@ -13,7 +13,7 @@ import re
 from tornado             import gen, escape
 from tornado.auth        import GoogleOAuth2Mixin
 from tornado.web         import HTTPError
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+#from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 
 from traitlets           import Unicode, default
@@ -39,6 +39,44 @@ else:
 class AuthError(Exception):
     pass
 
+def _auth_future_to_callback(callback, future):
+    try:
+        result = future.result()
+    except AuthError as e:
+        gen_log.warning(str(e))
+        result = None
+    callback(result)
+
+
+def _auth_return_future(f):
+    """Similar to tornado.concurrent.return_future, but uses the auth
+    module's legacy callback interface.
+
+    Note that when using this decorator the ``callback`` parameter
+    inside the function will actually be a future.
+    """
+    replacer = ArgReplacer(f, 'callback')
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        future = TracebackFuture()
+        callback, args, kwargs = replacer.replace(future, args, kwargs)
+        if callback is not None:
+            future.add_done_callback(
+                functools.partial(_auth_future_to_callback, callback))
+
+        def handle_exception(typ, value, tb):
+            if future.done():
+                return False
+            else:
+                future.set_exc_info((typ, value, tb))
+                return True
+        with ExceptionStackContext(handle_exception):
+            f(*args, **kwargs)
+        return future
+    return wrapper
+
+
 class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     """ An OpenID OAuth2 mixin to use GoogleLoginHandler with
     different Identity Providers using the OpenID standard. The current
@@ -61,7 +99,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     _OAUTH_NO_CALLBACKS = False
     _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
-
+    @_auth_return_future
     def get_authenticated_user(self, redirect_uri, code, callback,validate_server_cert):
         """Handles the login for the Google user, returning an access token.
         """
