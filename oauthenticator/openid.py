@@ -11,8 +11,10 @@ from base64 import b64decode, b64encode, urlsafe_b64decode
 import re
 
 from tornado             import gen, escape
-from tornado.auth        import GoogleOAuth2Mixin
+from tornado.auth        import OpenIdMixin
 from tornado.web         import HTTPError
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+
 
 from traitlets           import Unicode
 
@@ -87,23 +89,24 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     #     future.set_result(args)
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
-    '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
-       authorize_redirect.'''
-    scope=['openid','profile', 'email','offline_access','groups']
-
-    def get(self):
-        validate_server_cert = self.validate_server_cert
-        redirect_uri = self.authenticator.get_callback_url(self)
-        state = self.get_state()
-        self.set_state_cookie(state)
-        self.log.info('OAuth redirect: %r', redirect_uri)
-        self.log.info('Validate cert: %r', validate_server_cert)
-        self.authorize_redirect(
-            redirect_uri=redirect_uri,
-            client_id=self.authenticator.client_id,
-            scope=['openid','profile', 'email','offline_access','groups'],
-            extra_params={'state': state,' validate_cert':validate_server_cert},
-            response_type='code')
+    @property
+    def scope(self):
+        return self.authenticator.scope
+    # '''An OAuthLoginHandler that provides scope to GoogleOAuth2Mixin's
+    #    authorize_redirect.'''
+    # scope=['openid','profile', 'email','offline_access','groups']
+    #
+    # def get(self):
+    #     redirect_uri = self.authenticator.get_callback_url(self)
+    #     state = self.get_state()
+    #     self.set_state_cookie(state)
+    #     self.log.info('OAuth redirect: %r', redirect_uri)
+    #     self.authorize_redirect(
+    #         redirect_uri=redirect_uri,
+    #         client_id=self.authenticator.client_id,
+    #         scope=['openid','profile', 'email','offline_access','groups'],
+    #         extra_params={'state': state},
+    #         response_type='code')
 
 
 class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
@@ -111,39 +114,38 @@ class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
 
 
 class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
-
     login_handler = OpenIDLoginHandler
     callback_handler = OpenIDOAuthHandler
 
-    # hosted_domain = Unicode(
-    #     os.environ.get('HOSTED_DOMAIN', ''),
-    #     config=True,
-    #     help="""Hosted domain used to restrict sign-in, e.g. mycollege.edu"""
-    # )
-    login_service = Unicode(
+    @default('scope')
+    def _scope_default(self):
+        return ['openid', 'profile', 'email','offline_access','groups']
+
+    login_service =  Unicode(
         os.environ.get('LOGIN_SERVICE', 'Dex'),
         config=True,
-        help="""Google Apps hosted domain string, e.g. My College"""
+        help="""String for button to be displayed to the user before login"""
     )
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument('code')
-        if not code:
-            raise HTTPError(400, "oauth callback made without a token")
-
         handler.settings['google_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
-            'scope': ['openid','profile', 'email','offline_access','groups'],
+            'scope': self.scope,# ['openid','profile', 'email','offline_access','groups'],
             'response_type': 'code'
         }
+
+        validate_server_cert = self.validate_server_cert
+        self.log.info('Validate cert: %r', validate_server_cert)
 
         self.log.info('openid: settings: "%s"', str(handler.settings['google_oauth']))
         self.log.info('code is: {}'.format(code))
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
+            validate_cert=validate_server_cert,
             code=code)
 
         access_token = str(user['access_token'])
@@ -151,7 +153,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         self.log.info('token is: {}'.format(access_token))
         self.log.info('full user json is: {}'.format(user))
 
-        http_client = handler.get_auth_http_client()
+        #http_client = handler.get_auth_http_client()
 
         #response = yield http_client.fetch(
         #    self._OAUTH_USERINFO_URL + '?access_token=' + access_token
