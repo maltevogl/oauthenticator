@@ -74,9 +74,9 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
             "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
             "grant_type": "authorization_code",
         })
-        #self.log.info('http req body: %r', body)
-        #self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
-        #self.log.info('callback url: %r', callback)
+        self.log.info('http req body: %r', body)
+        self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
+        self.log.info('callback url: %r', callback)
         http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
                    functools.partial(self._on_access_token, callback),
                    method="POST",
@@ -152,7 +152,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code,
-            callback='',
             validate_server_cert=validate_server_cert)
 
         access_token = str(user['access_token'])
