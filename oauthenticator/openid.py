@@ -16,7 +16,7 @@ from tornado.web         import HTTPError
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 
-from traitlets           import Unicode
+from traitlets           import Unicode, default
 
 from jupyterhub.auth     import LocalAuthenticator
 from jupyterhub.utils    import url_path_join
