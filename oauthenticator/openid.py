@@ -15,6 +15,10 @@ from tornado.auth        import GoogleOAuth2Mixin
 from tornado.web         import HTTPError
 #from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
+from tornado.concurrent import TracebackFuture, return_future, chain_future
+from tornado.log import gen_log
+from tornado.stack_context import ExceptionStackContext
+
 
 from traitlets           import Unicode, default
 
@@ -25,7 +29,7 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
 
-from tornado.util import PY3
+from tornado.util import PY3, ArgReplacer, unicode_type
 import functools
 
 if PY3:
