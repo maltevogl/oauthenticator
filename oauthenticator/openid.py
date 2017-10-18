@@ -145,7 +145,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
-            validate_cert=validate_server_cert,
             code=code)
 
         access_token = str(user['access_token'])
