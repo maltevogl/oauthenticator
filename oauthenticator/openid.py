@@ -62,10 +62,11 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
 
-    def get_authenticated_user(self, redirect_uri, code, callback):
+    def get_authenticated_user(self, redirect_uri, code, callback,validate_server_cert):
         """Handles the login for the Google user, returning an access token.
         """
         http = self.get_auth_http_client()
+
         body = urllib_parse.urlencode({
             "redirect_uri": redirect_uri,
             "code": code,
@@ -145,14 +146,14 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         validate_server_cert = self.validate_server_cert
         self.log.info('Validate cert: %r', validate_server_cert)
-
         self.log.info('openid settings: "%s"', str(handler.settings['coreos_dex_oauth']))
         #self.log.info('code is: {}'.format(code))
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code,
-            callback='')
+            callback='',
+            validate_server_cert=validate_server_cert)
 
         access_token = str(user['access_token'])
 
