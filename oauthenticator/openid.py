@@ -91,13 +91,13 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
        authorize_redirect.'''
     scope=['openid','profile', 'email','offline_access','groups']
 
-    validate_server_cert = self.validate_server_cert
-
     def get(self):
+        validate_server_cert = self.validate_server_cert
         redirect_uri = self.authenticator.get_callback_url(self)
         state = self.get_state()
         self.set_state_cookie(state)
         self.log.info('OAuth redirect: %r', redirect_uri)
+        self.log.info('Validate cert: %r', validate_server_cert)
         self.authorize_redirect(
             redirect_uri=redirect_uri,
             client_id=self.authenticator.client_id,
