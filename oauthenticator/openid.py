@@ -226,29 +226,16 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         username = ''
 
         for connector in self.CONNECTORS.split(','):
-            if connector == 'github':
-                if re.findall('(?<=name":").+?(?=")', payload):
+            try:
+                if substring_print.endswith(connector):
                     returned_name = re.findall('(?<=name":").+?(?=")', payload)[0]
-                    username = re.sub(' ','',returned_name) + '_' + 'github'
-                else:
-                    pass
-            elif re.findall(connector,substring_print):
-                username = re.sub(connector,'_' + connector,substring_print)
-            else:
+                    username = re.sub(' ','',returned_name) + '_' + connector
+            except:
+                self.log.info('Could not find {0} in {1}.'.format(connector,substring_print))
                 pass
 
         if not username:
             raise Exception('Connector error: Could not extract username from id_token, sub or name entry.')
-
-        #if self.hosted_domain:
-        #    if not username.endswith('@'+self.hosted_domain) or \
-        #        bodyjs['hd'] != self.hosted_domain:
-        #        raise HTTPError(403,
-        #            "You are not signed in to your {} account.".format(
-        #                self.hosted_domain)
-        #        )
-        #    else:
-        #        username = username.split('@')[0]
 
         return username
 
