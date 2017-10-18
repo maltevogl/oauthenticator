@@ -84,15 +84,15 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
                    validate_cert = validate_server_cert)
 
 
-    # def _on_access_token(self, future, response):
-    #     """Callback function for the exchange to the access token."""
-    #     #self.log.info('response body: %r', response)
-    #     if response.error:
-    #         future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
-    #         return
-    #
-    #     args = escape.json_decode(response.body)
-    #     future.set_result(args)
+    def _on_access_token(self, future, response):
+        """Callback function for the exchange to the access token."""
+        #self.log.info('response body: %r', response)
+        if response.error:
+            future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
+            return
+
+        args = escape.json_decode(response.body)
+        future.set_result(args)
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     @property
@@ -146,12 +146,13 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         validate_server_cert = self.validate_server_cert
         self.log.info('Validate cert: %r', validate_server_cert)
 
-        self.log.info('openid: settings: "%s"', str(handler.settings['coreos_dex_oauth']))
-        self.log.info('code is: {}'.format(code))
+        self.log.info('openid settings: "%s"', str(handler.settings['coreos_dex_oauth']))
+        #self.log.info('code is: {}'.format(code))
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
-            code=code)
+            code=code,
+            callback='')
 
         access_token = str(user['access_token'])
 
