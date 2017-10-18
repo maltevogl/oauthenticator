@@ -58,26 +58,32 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
         _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
         _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
+    _OAUTH_NO_CALLBACKS = False
+    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
-    # def get_authenticated_user(self, redirect_uri, code, callback):
-    #     """Handles the login for the Google user, returning an access token.
-    #     """
-    #     http = self.get_auth_http_client()
-    #     body = urllib_parse.urlencode({
-    #         "redirect_uri": redirect_uri,
-    #         "code": code,
-    #         "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
-    #         "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
-    #         "grant_type": "authorization_code",
-    #     })
-    #     self.log.info('http req body: %r', body)
-    #     self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
-    #     self.log.info('callback url: %r', callback)
-    #     http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
-    #                functools.partial(self._on_access_token, callback),
-    #                method="POST", headers={'Content-Type': 'application/x-www-form-urlencoded'}, body=body, validate_cert = False)
-    #
-    #
+
+    def get_authenticated_user(self, redirect_uri, code, callback):
+        """Handles the login for the Google user, returning an access token.
+        """
+        http = self.get_auth_http_client()
+        body = urllib_parse.urlencode({
+            "redirect_uri": redirect_uri,
+            "code": code,
+            "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
+            "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
+            "grant_type": "authorization_code",
+        })
+        #self.log.info('http req body: %r', body)
+        #self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
+        #self.log.info('callback url: %r', callback)
+        http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
+                   functools.partial(self._on_access_token, callback),
+                   method="POST",
+                   headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                   body=body,
+                   validate_cert = validate_server_cert)
+
+
     # def _on_access_token(self, future, response):
     #     """Callback function for the exchange to the access token."""
     #     #self.log.info('response body: %r', response)
@@ -130,7 +136,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
     @gen.coroutine
     def authenticate(self, handler, data=None):
         code = handler.get_argument('code')
-        handler.settings['google_oauth'] = {
+        handler.settings['coreos_dex_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
             'scope': self.scope,# ['openid','profile', 'email','offline_access','groups'],
@@ -140,7 +146,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         validate_server_cert = self.validate_server_cert
         self.log.info('Validate cert: %r', validate_server_cert)
 
-        self.log.info('openid: settings: "%s"', str(handler.settings['google_oauth']))
+        self.log.info('openid: settings: "%s"', str(handler.settings['coreos_dex_oauth']))
         self.log.info('code is: {}'.format(code))
 
         user = yield handler.get_authenticated_user(
