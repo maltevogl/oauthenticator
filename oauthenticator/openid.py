@@ -228,8 +228,10 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         for connector in self.CONNECTORS.split(','):
             try:
                 if substring_print.endswith(connector):
-                    returned_name = re.findall('(?<=name":").+?(?=")', payload)[0]
-                    username = re.sub(' ','',returned_name) + '_' + connector
+                    if returned_name = re.findall('(?<=name":").+?(?=")', payload):
+                        username = re.sub(' ','',returned_name[0]) + '_' + connector
+                    else:
+                        username = re.sub(connector,'',substring_print) + '_' + connector
             except:
                 self.log.info('Could not find {0} in {1}.'.format(connector,substring_print))
                 pass
