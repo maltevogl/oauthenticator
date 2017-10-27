@@ -228,7 +228,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         for connector in self.CONNECTORS.split(','):
             try:
                 if substring_print.endswith(connector):
-                    if returned_name = re.findall('(?<=name":").+?(?=")', payload):
+                    returned_name = re.findall('(?<=name":").+?(?=")', payload)
+                    if returned_name:
                         username = re.sub(' ','',returned_name[0]) + '_' + connector
                     else:
                         username = re.sub(connector,'',substring_print) + '_' + connector
