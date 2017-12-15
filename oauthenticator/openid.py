@@ -9,6 +9,7 @@ import json
 
 from base64 import b64decode, b64encode, urlsafe_b64decode
 import re
+from subprocess import check_call
 
 from tornado             import gen, escape
 from tornado.auth        import GoogleOAuth2Mixin
@@ -233,6 +234,15 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         username = re.sub(' ','',returned_name[0]) + '_' + connector
                     else:
                         username = re.sub(connector,'',substring_print) + '_' + connector
+                if connector == 'saml':
+                    try:
+                        res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
+                        userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
+                        res1 = check_call(['echo','>',userNameFilePath])
+                        res2 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
+                    except:
+                        self.log.info('Could not add user {0}.'.format(username))
+                        pass
             except:
                 self.log.info('Could not find {0} in {1}.'.format(connector,substring_print))
                 pass
