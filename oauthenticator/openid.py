@@ -231,14 +231,14 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 if substring_print.endswith(connector):
                     returned_name = re.findall('(?<=name":").+?(?=")', payload)
                     if returned_name:
-                        username = re.sub(' ','',returned_name[0]) + '_' + connector
+                        username = re.sub(' ','',returned_name[0]).lower() + '_' + connector
                     else:
-                        username = re.sub(connector,'',substring_print) + '_' + connector
+                        username = re.sub(connector,'',substring_print).lower() + '_' + connector
                 if connector == 'saml':
                     try:
                         res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
                         userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
-                        res1 = check_call(['echo','>',userNameFilePath])
+                        res1 = check_call(['echo',username,'>',userNameFilePath])
                         res2 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
                     except:
                         self.log.info('Could not add user {0}.'.format(username))
