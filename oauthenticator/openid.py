@@ -175,6 +175,13 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     username = re.sub(' ','',returned_name) + '_' + 'github'
                 else:
                     pass
+            if connector == 'saml':
+                if re.findall('(?<=name":").+?(?=")', payload):
+                    returned_name = re.findall('(?<=name":").+?(?=")', payload)[0]
+                    username = re.sub(' ','',returned_name) + '_' + 'saml'
+                    
+                else:
+                    pass
             elif re.findall(connector,substring_print):
                 username = re.sub(connector,'_' + connector,substring_print)
             else:
