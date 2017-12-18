@@ -240,7 +240,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     else:
                         username = re.sub(connector,'',substring_print).lower() + '_' + connector
                 if connector == 'saml':
-                    with open('/srv/jupyterhub/api-token.txt') as file:
+                    with open('/srv/jupyterhub/api_token.txt') as file:
                         user_api_token = file.read()
                     r = requests.get(api_url + '/users',
                         headers={
