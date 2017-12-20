@@ -229,7 +229,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         ###
         # TODO: Fix to make portable
         ###
-        api_url = 'https://c105-188.cloud.gwdg.de:442/hub/api'
 
         for connector in self.CONNECTORS.split(','):
             try:
@@ -249,7 +248,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     self.log.info('Is saml user.')
                     with open('/srv/jupyterhub/api_token.txt') as file:
                         user_api_token = file.read()
-                    r = requests.get(api_url + '/users',
+                    self.log.info('Got token: {0}'.format(user_api_token))
+                    r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
                         headers={
                                  'Authorization': 'token {0}'.format(user_api_token),
                                 }
