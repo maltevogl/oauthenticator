@@ -239,7 +239,14 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         username = re.sub(' ','',returned_name[0]).lower() + '_' + connector
                     else:
                         username = re.sub(connector,'',substring_print).lower() + '_' + connector
+            except:
+                self.log.info('Could not find {0} in {1}.'.format(connector,substring_print))
+                pass
+
+            if username:
+                self.log.info('Working on user {0}'.format(username))
                 if connector == 'saml':
+                    self.log.info('Is saml user.')
                     with open('/srv/jupyterhub/api_token.txt') as file:
                         user_api_token = file.read()
                     r = requests.get(api_url + '/users',
@@ -250,8 +257,10 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     r.raise_for_status()
                     userdicts = r.json()
                     userlist = [user['name'] for user in userdicts]
+                    self.log.info('Existing users: {0}'.format(userlist))
                     if username not in userlist:
                         try:
+                            self.log.info('Try adding user to db.')
                             res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
                             userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
                             res1 = check_call(['echo',username,'>',userNameFilePath])
@@ -261,13 +270,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                             pass
                     else:
                         pass
-            except:
-                self.log.info('Could not find {0} in {1}.'.format(connector,substring_print))
-                pass
-
-        if not username:
-            raise Exception('Connector error: Could not extract username from id_token, sub or name entry.')
-
+            else:
+                raise Exception('Connector error: Could not extract username from id_token, sub or name entry.')
         return username
 
 class LocalOpenIDOAuthenticator(LocalAuthenticator, OpenIDOAuthenticator):
