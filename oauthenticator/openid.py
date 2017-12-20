@@ -270,6 +270,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                             pass
                     else:
                         pass
+                else:
+                    pass
             else:
                 raise Exception('Connector error: Could not extract username from id_token, sub or name entry.')
         return username
