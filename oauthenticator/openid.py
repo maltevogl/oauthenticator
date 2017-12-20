@@ -247,7 +247,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 if connector == 'saml':
                     self.log.info('Is saml user.')
                     with open('/srv/jupyterhub/api_token.txt') as file:
-                        user_api_token = file.read()
+                        user_api_token = file.readline().rstrip('\n')
                     self.log.info('Got token: {0}'.format(user_api_token))
                     r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
                         headers={
