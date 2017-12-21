@@ -7,6 +7,8 @@ Derived from the GitHub OAuth authenticator.
 import os
 import json
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 from base64 import b64decode, b64encode, urlsafe_b64decode
 import re
@@ -95,12 +97,16 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         with open('/srv/jupyterhub/api_token.txt') as file:
             user_api_token = file.readline().rstrip('\n')
         self.log.info('Got token: {0}'.format(user_api_token))
-        r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
-            headers={
-                     'Authorization': 'token {0}'.format(user_api_token),
-                    }
+        sessions = requests.Session()
+        retry = Retry(connect=5, backoff_factor=1)
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        header = {'Authorization': 'token {0}'.format(user_api_token)}
+        session.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
+            headers=header
             )
-        self.log.info('request get.')
+        self.log.info('request get send')
         r.raise_for_status()
         userdicts = r.json()
         self.userlist = [user['name'] for user in userdicts]
