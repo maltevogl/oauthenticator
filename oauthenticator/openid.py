@@ -253,7 +253,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             if username.split('_')[-1] == 'saml':
                 self.log.info('\tis saml user.')
                 with open('/srv/jupyterhub/userlist.txt') as file:
-                    userlist = file.read().split('/n')
+                    userlist = file.read().split('\n')
                 self.log.info('Existing users: {0}'.format(userlist))
                 if username not in userlist:
                     try:
