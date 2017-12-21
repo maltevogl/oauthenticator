@@ -91,6 +91,21 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     should be set to the URL of the OpenID provider. The API endpoints
     might have to be changed, depending on the ID provider."""
 
+    def __init__(self):
+        with open('/srv/jupyterhub/api_token.txt') as file:
+            user_api_token = file.readline().rstrip('\n')
+        self.log.info('Got token: {0}'.format(user_api_token))
+        r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
+            headers={
+                     'Authorization': 'token {0}'.format(user_api_token),
+                    }
+            )
+        self.log.info('request get.')
+        r.raise_for_status()
+        userdicts = r.json()
+        self.userlist = [user['name'] for user in userdicts]
+
+
     CONNECTORS = os.environ.get('CONNECTOR_LIST')
 
     _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
@@ -104,18 +119,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
     _OAUTH_NO_CALLBACKS = False
     _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
-    with open('/srv/jupyterhub/api_token.txt') as file:
-        user_api_token = file.readline().rstrip('\n')
-    self.log.info('Got token: {0}'.format(user_api_token))
-    r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
-        headers={
-                 'Authorization': 'token {0}'.format(user_api_token),
-                }
-        )
-    self.log.info('request get.')
-    r.raise_for_status()
-    userdicts = r.json()
-    self.userlist = [user['name'] for user in userdicts]
+
 
     @_auth_return_future
     def get_authenticated_user(self, redirect_uri, code, callback,validate_server_cert):
