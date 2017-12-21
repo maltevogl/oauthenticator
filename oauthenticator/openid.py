@@ -183,23 +183,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        with open('/srv/jupyterhub/api_token.txt') as file:
-            user_api_token = file.readline().rstrip('\n')
-        self.log.info('Got token: {0}'.format(user_api_token))
-        session = requests.Session()
-        retry = Retry(connect=5, backoff_factor=0.5)
-        adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
-        header = {'Authorization': 'token {0}'.format(user_api_token)}
-        session.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
-            headers=header
-            )
-        self.log.info('request get send')
-        r.raise_for_status()
-        userdicts = r.json()
-        self.userlist = [user['name'] for user in userdicts]
-        
         code = handler.get_argument('code')
         handler.settings['coreos_dex_oauth'] = {
             'key': self.client_id,
@@ -269,7 +252,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             self.log.info('Working on user {0}'.format(username))
             if username.split('_')[-1] == 'saml':
                 self.log.info('\tis saml user.')
-                self.log.info('Existing users: {0}'.format(self.userlist))
+                with open('/srv/jupyterhub/userlist.txt') as file:
+                    userlist = file.read().split('/n')
+                self.log.info('Existing users: {0}'.format(userlist))
                 if username not in self.userlist:
                     try:
                         self.log.info('Try adding user to db.')
