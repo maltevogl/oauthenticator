@@ -97,7 +97,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         with open('/srv/jupyterhub/api_token.txt') as file:
             user_api_token = file.readline().rstrip('\n')
         self.log.info('Got token: {0}'.format(user_api_token))
-        sessions = requests.Session()
+        session = requests.Session()
         retry = Retry(connect=5, backoff_factor=1)
         adapter = HTTPAdapter(max_retries=retry)
         session.mount('http://', adapter)
