@@ -247,8 +247,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         if username:
             self.log.info('Working on user {0}'.format(username))
-            if connector == 'saml':
-                self.log.info('Is saml user.')
+            if username.split('_')[-1] == 'saml':
+                self.log.info('\tis saml user.')
                 with open('/srv/jupyterhub/api_token.txt') as file:
                     user_api_token = file.readline().rstrip('\n')
                 self.log.info('Got token: {0}'.format(user_api_token))
@@ -257,6 +257,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                              'Authorization': 'token {0}'.format(user_api_token),
                             }
                     )
+                self.log.info('request get.')
                 r.raise_for_status()
                 userdicts = r.json()
                 userlist = [user['name'] for user in userdicts]
