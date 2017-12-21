@@ -255,7 +255,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 with open('/srv/jupyterhub/userlist.txt') as file:
                     userlist = file.read().split('/n')
                 self.log.info('Existing users: {0}'.format(userlist))
-                if username not in self.userlist:
+                if username not in userlist:
                     try:
                         self.log.info('Try adding user to db.')
                         res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
