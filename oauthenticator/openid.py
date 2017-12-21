@@ -93,25 +93,6 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     should be set to the URL of the OpenID provider. The API endpoints
     might have to be changed, depending on the ID provider."""
 
-    def __init__(self):
-        with open('/srv/jupyterhub/api_token.txt') as file:
-            user_api_token = file.readline().rstrip('\n')
-        self.log.info('Got token: {0}'.format(user_api_token))
-        session = requests.Session()
-        retry = Retry(connect=5, backoff_factor=1)
-        adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
-        header = {'Authorization': 'token {0}'.format(user_api_token)}
-        session.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
-            headers=header
-            )
-        self.log.info('request get send')
-        r.raise_for_status()
-        userdicts = r.json()
-        self.userlist = [user['name'] for user in userdicts]
-
-
     CONNECTORS = os.environ.get('CONNECTOR_LIST')
 
     _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
@@ -202,6 +183,23 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
+        with open('/srv/jupyterhub/api_token.txt') as file:
+            user_api_token = file.readline().rstrip('\n')
+        self.log.info('Got token: {0}'.format(user_api_token))
+        session = requests.Session()
+        retry = Retry(connect=5, backoff_factor=0.5)
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        header = {'Authorization': 'token {0}'.format(user_api_token)}
+        session.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
+            headers=header
+            )
+        self.log.info('request get send')
+        r.raise_for_status()
+        userdicts = r.json()
+        self.userlist = [user['name'] for user in userdicts]
+        
         code = handler.get_argument('code')
         handler.settings['coreos_dex_oauth'] = {
             'key': self.client_id,
