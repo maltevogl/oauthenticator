@@ -105,6 +105,16 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     _OAUTH_NO_CALLBACKS = False
     _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
+    r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
+        headers={
+                 'Authorization': 'token {0}'.format(user_api_token),
+                }
+        )
+    self.log.info('request get.')
+    r.raise_for_status()
+    userdicts = r.json()
+    self.userlist = [user['name'] for user in userdicts]
+
     @_auth_return_future
     def get_authenticated_user(self, redirect_uri, code, callback,validate_server_cert):
         """Handles the login for the Google user, returning an access token.
@@ -252,17 +262,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 with open('/srv/jupyterhub/api_token.txt') as file:
                     user_api_token = file.readline().rstrip('\n')
                 self.log.info('Got token: {0}'.format(user_api_token))
-                r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
-                    headers={
-                             'Authorization': 'token {0}'.format(user_api_token),
-                            }
-                    )
-                self.log.info('request get.')
-                r.raise_for_status()
-                userdicts = r.json()
-                userlist = [user['name'] for user in userdicts]
-                self.log.info('Existing users: {0}'.format(userlist))
-                if username not in userlist:
+                self.log.info('Existing users: {0}'.format(self.userlist))
+                if username not in self.userlist:
                     try:
                         self.log.info('Try adding user to db.')
                         res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
