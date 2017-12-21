@@ -104,7 +104,9 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
         _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
     _OAUTH_NO_CALLBACKS = False
     _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
-
+    with open('/srv/jupyterhub/api_token.txt') as file:
+        user_api_token = file.readline().rstrip('\n')
+    self.log.info('Got token: {0}'.format(user_api_token))
     r = requests.get('https://c105-188.cloud.gwdg.de:442/hub/api/users',
         headers={
                  'Authorization': 'token {0}'.format(user_api_token),
@@ -259,9 +261,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             self.log.info('Working on user {0}'.format(username))
             if username.split('_')[-1] == 'saml':
                 self.log.info('\tis saml user.')
-                with open('/srv/jupyterhub/api_token.txt') as file:
-                    user_api_token = file.readline().rstrip('\n')
-                self.log.info('Got token: {0}'.format(user_api_token))
                 self.log.info('Existing users: {0}'.format(self.userlist))
                 if username not in self.userlist:
                     try:
