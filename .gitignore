@@ -54,7 +54,11 @@ docs/_build/
 # PyBuilder
 target/
 
-userlist
+# List of currently available users
+userlist.txt
+*.crt
+*.key
+*.pem
 ssl/ssl.cert
 ssl/ssl.key
 env

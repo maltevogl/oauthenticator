@@ -253,7 +253,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             if username.split('_')[-1] == 'saml':
                 self.log.info('\tis saml user.')
                 with open('/srv/jupyterhub/userlist.txt') as file:
-                    userlist = file.read().split('\n')
+                    userlist = [x.split(' ')[0] for x in file.read().split('\n') if x.endswith('admin')]
+                with open('/srv/jupyterhub/api_token.txt') as file:
+                    api_token = file.readline()
                 self.log.info('Existing users: {0}'.format(userlist))
                 if username not in userlist:
                     try:
@@ -261,7 +263,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
                         userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
                         res1 = check_call(['echo',username,'>',userNameFilePath])
-                        res2 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
+                        res2 = check_call(['curl -X POST -H "Authorization: token {0}" https://c105-188.cloud.gwdg.de:442/hub/api/users/{1}'.format(api_token,username).split()])
+                        res3 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
                     except:
                         self.log.info('Could not add user {0}.'.format(username))
                         pass
