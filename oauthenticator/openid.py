@@ -267,7 +267,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         self.log.info('Could not write {} to file or add to userlist.'.format(username))
                         pass
                     try:
-                        res2 = check_call(['curl -X POST -H "Authorization: token {0}" https://c105-188.cloud.gwdg.de:442/hub/api/users/{1}'.format(api_token,username).split()])
+                        res2 = check_call(['curl','-X','POST','-H','"Authorization:','token',str(api_token) + '"', 'https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username])
                     except:
                         self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
                         pass
