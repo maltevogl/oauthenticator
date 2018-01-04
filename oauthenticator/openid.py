@@ -263,10 +263,19 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
                         userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
                         res1 = check_call(['echo',username,'>',userNameFilePath])
+                    except:
+                        self.log.info('Could not write {} to file or add to userlist.'.format(username))
+                        pass
+                    try:
                         res2 = check_call(['curl -X POST -H "Authorization: token {0}" https://c105-188.cloud.gwdg.de:442/hub/api/users/{1}'.format(api_token,username).split()])
+                    except:
+                        self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
+                        pass
+                    try:
                         res3 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
                     except:
-                        self.log.info('Could not add user {0}.'.format(username))
+                        self.log.info('Could not run adduser script for {0}.'.format(username))
+                        username = ''
                         pass
                 else:
                     pass
