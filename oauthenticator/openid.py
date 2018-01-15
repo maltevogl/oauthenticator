@@ -254,9 +254,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             if username.split('_')[-1] == 'saml':
                 self.log.info('\tis saml user.')
                 with open('/srv/jupyterhub/userlist.txt') as file:
-                    users = [x for x in file.read().split('\n' if not x.endswith('admin'))]
-                    adminusers = [x.split(' ')[0] for x in file.read().split('\n') if x.endswith('admin')]
-                    userlist = users + adminusers
+                    userlist = [x.split(' ')[0] for x in file.read().split('\n')]
                 with open('/srv/jupyterhub/api_token.txt') as file:
                     api_token = file.readline()
                 #self.log.info('Got api token: {0}'.format(api_token))
