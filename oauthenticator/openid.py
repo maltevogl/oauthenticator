@@ -198,8 +198,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
-            code=code,
-            validate_server_cert=validate_server_cert)
+            code=code)#,
+            #validate_server_cert=validate_server_cert)
 
         access_token = str(user['access_token'])
 
@@ -256,7 +256,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     userlist = [x.split(' ')[0] for x in file.read().split('\n') if x.endswith('admin')]
                 with open('/srv/jupyterhub/api_token.txt') as file:
                     api_token = file.readline()
-                self.log.info('Got api token: {0}'.format(api_token))
+                #self.log.info('Got api token: {0}'.format(api_token))
                 self.log.info('Existing users: {0}'.format(userlist))
                 if username not in userlist:
                     try:
@@ -268,7 +268,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         self.log.info('Could not write {} to file or add to userlist.'.format(username))
                         pass
                     try:
-                        res2 = check_output(['curl','-X','POST','-H','"Authorization:','token',str(api_token) + '"', 'https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username, '>','/dev/null','&'])
+                        res2 = check_output('curl -X POST -H "Authorization: token ' + api_token + '" https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username],shell=True)
+                        print(res2)
                     except:
                         self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
                         pass
