@@ -198,12 +198,12 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
-            code=code)#,
-            #validate_server_cert=validate_server_cert)
+            code=code),
+            validate_server_cert=validate_server_cert)
 
         access_token = str(user['access_token'])
 
-        self.log.info('token is: {}'.format(access_token))
+        #self.log.info('token is: {}'.format(access_token))
         self.log.info('full user json is: {}'.format(user))
 
         #http_client = handler.get_auth_http_client()
@@ -253,7 +253,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             if username.split('_')[-1] == 'saml':
                 self.log.info('\tis saml user.')
                 with open('/srv/jupyterhub/userlist.txt') as file:
-                    userlist = [x.split(' ')[0] for x in file.read().split('\n') if x.endswith('admin')]
+                    users = [x for x in file.read().split('\n' if not x.endswith('admin'))]
+                    adminusers = [x.split(' ')[0] for x in file.read().split('\n') if x.endswith('admin')]
+                    userlist = users + adminusers
                 with open('/srv/jupyterhub/api_token.txt') as file:
                     api_token = file.readline()
                 #self.log.info('Got api token: {0}'.format(api_token))
