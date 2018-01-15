@@ -12,7 +12,7 @@ from requests.packages.urllib3.util.retry import Retry
 
 from base64 import b64decode, b64encode, urlsafe_b64decode
 import re
-from subprocess import check_call
+from subprocess import check_call,check_output
 
 from tornado             import gen, escape
 from tornado.auth        import GoogleOAuth2Mixin
@@ -256,6 +256,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     userlist = [x.split(' ')[0] for x in file.read().split('\n') if x.endswith('admin')]
                 with open('/srv/jupyterhub/api_token.txt') as file:
                     api_token = file.readline()
+                self.log.info('Got api token: {0}'.format(api_token))
                 self.log.info('Existing users: {0}'.format(userlist))
                 if username not in userlist:
                     try:
@@ -266,11 +267,11 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     except:
                         self.log.info('Could not write {} to file or add to userlist.'.format(username))
                         pass
-                    #try:
-                    #    res2 = check_call(['curl','-X','POST','-H','"Authorization:','token',str(api_token) + '"', 'https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username])
-                    #except:
-                    #    self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
-                    #    pass
+                    try:
+                        res2 = check_output(['curl','-X','POST','-H','"Authorization:','token',str(api_token) + '"', 'https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username, '>','/dev/null','&'])
+                    except:
+                        self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
+                        pass
                     try:
                         res3 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
                     except:
