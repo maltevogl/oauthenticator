@@ -12,11 +12,11 @@ from requests.packages.urllib3.util.retry import Retry
 
 from base64 import b64decode, b64encode, urlsafe_b64decode
 import re
-from subprocess import check_call,check_output
+from subprocess import check_call, check_output
 
-from tornado             import gen, escape
-from tornado.auth        import GoogleOAuth2Mixin
-from tornado.web         import HTTPError
+from tornado import gen, escape
+from tornado.auth import GoogleOAuth2Mixin
+from tornado.web import HTTPError
 #from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from tornado.concurrent import TracebackFuture, return_future, chain_future
@@ -24,10 +24,10 @@ from tornado.log import gen_log
 from tornado.stack_context import ExceptionStackContext
 
 
-from traitlets           import Unicode, default
+from traitlets import Unicode, default
 
-from jupyterhub.auth     import LocalAuthenticator
-from jupyterhub.utils    import url_path_join
+from jupyterhub.auth import LocalAuthenticator
+from jupyterhub.utils import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
@@ -44,6 +44,7 @@ else:
     import urlparse
     import urllib as urllib_parse
 
+
 class AuthError(Exception):
     pass
 
@@ -57,7 +58,8 @@ def _auth_future_to_callback(callback, future):
 
 
 def _auth_return_future(f):
-    """Similar to tornado.concurrent.return_future, but uses the auth
+    """
+    Similar to tornado.concurrent.return_future, but uses the auth
     module's legacy callback interface.
 
     Note that when using this decorator the ``callback`` parameter
@@ -86,12 +88,15 @@ def _auth_return_future(f):
 
 
 class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
-    """ An OpenID OAuth2 mixin to use GoogleLoginHandler with
+
+    """ OpenID OAuth2 Mixin.
+    An OpenID OAuth2 mixin to use GoogleLoginHandler with
     different Identity Providers using the OpenID standard. The current
     setup should work with MITREid Connect servers. In addtion to the usual
     parameters client ID and secret, the environment variable OPENID_HOST
     should be set to the URL of the OpenID provider. The API endpoints
-    might have to be changed, depending on the ID provider."""
+    might have to be changed, depending on the ID provider.
+    """
 
     CONNECTORS = os.environ.get('CONNECTOR_LIST')
 
@@ -107,11 +112,9 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
     _OAUTH_NO_CALLBACKS = False
     _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
-
     @_auth_return_future
-    def get_authenticated_user(self, redirect_uri, code, callback,validate_server_cert):
-        """Handles the login for the Google user, returning an access token.
-        """
+    def get_authenticated_user(self, redirect_uri, code, callback, validate_server_cert):
+        """Handles the login for the Google user, returning an access token."""
         http = self.get_auth_http_client()
 
         body = urllib_parse.urlencode({
@@ -141,6 +144,7 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
 
         args = escape.json_decode(response.body)
         future.set_result(args)
+
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     @property
@@ -173,9 +177,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
 
     @default('scope')
     def _scope_default(self):
-        return ['openid', 'profile', 'email','offline_access','groups']
+        return ['openid', 'profile', 'email', 'offline_access', 'groups']
 
-    login_service =  Unicode(
+    login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'Dex'),
         config=True,
         help="""String for button to be displayed to the user before login"""
@@ -187,14 +191,13 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         handler.settings['coreos_dex_oauth'] = {
             'key': self.client_id,
             'secret': self.client_secret,
-            'scope': self.scope,# ['openid','profile', 'email','offline_access','groups'],
+            'scope': self.scope,
             'response_type': 'code'
         }
 
         validate_server_cert = self.validate_server_cert
         self.log.info('Validate cert: %r', validate_server_cert)
         self.log.info('openid settings: "%s"', str(handler.settings['coreos_dex_oauth']))
-        #self.log.info('code is: {}'.format(code))
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
@@ -202,28 +205,12 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             validate_server_cert=validate_server_cert,
             )
 
-        access_token = str(user['access_token'])
-
-        #self.log.info('token is: {}'.format(access_token))
         self.log.info('full user json is: {}'.format(user))
 
-        #http_client = handler.get_auth_http_client()
-
-        #response = yield http_client.fetch(
-        #    self._OAUTH_USERINFO_URL + '?access_token=' + access_token
-        #)
-
-        #if not response:
-        #    self.clear_all_cookies()
-        #    raise HTTPError(500, 'Google authentication failed')
-
-        #body = response.body.decode()
-        #self.log.debug('response.body.decode(): {}'.format(body))
-        #bodyjs = json.loads(body)
         payload_encoded = user['id_token'].split('.')[1]
         payload = urlsafe_b64decode(payload_encoded + '=' * (4 - len(payload_encoded) % 4)).decode('utf8')
         self.log.info('urlsafe decoded payload is: {}'.format(payload))
-        userstring = re.findall('(?<=sub":").+?(?=",)',payload)[0]
+        userstring = re.findall('(?<=sub":").+?(?=",)', payload)[0]
         substring = urlsafe_b64decode(userstring + '=' * (4 - len(userstring) % 4)).decode('utf8')
 
         substring_print = ''.join([i for i in substring if i.isprintable()])
@@ -239,15 +226,13 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 if substring_print.endswith(connector):
                     returned_name = re.findall('(?<=name":").+?(?=")', payload)
                     if returned_name:
-                        username = re.sub(' ','',returned_name[0]).lower() + '_' + connector
+                        username = re.sub(' ', '', returned_name[0]).lower() + '_' + connector
                     else:
-                        username = re.sub(connector,'',substring_print).lower() + '_' + connector
+                        username = re.sub(connector, '', substring_print).lower() + '_' + connector
                 else:
-                    self.log.info('Could not find {0} in {1}.'.format(connector,substring_print))
-                    pass
-            except:
-                self.log.info('Try failed for {0} in {1}.'.format(connector,substring_print))
-                pass
+                    self.log.info('Could not find {0} in {1}.'.format(connector, substring_print))
+            except ValueError:
+                self.log.info('Try failed for {0} in {1}.'.format(connector, substring_print))
 
         if username:
             self.log.info('Working on user {0}'.format(username))
@@ -255,70 +240,49 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 self.log.info('\tis saml user.')
                 with open('/srv/jupyterhub/userlist.txt') as file:
                     userlist = [x.split(' ')[0] for x in file.read().split('\n')]
-                with open('/srv/jupyterhub/api_token.txt') as file:
-                    api_token = file.readline()
-                #self.log.info('Got api token: {0}'.format(api_token))
                 self.log.info('Existing users: {0}'.format(userlist))
                 if username not in userlist:
                     try:
                         self.log.info('Try adding user to db.')
-                        res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
+                        res0 = check_call(['echo', username, '>>', '/srv/jupyterhub/userlist.txt'])
                         userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
-                        res1 = check_call(['echo',username,'saml','>',userNameFilePath])
-                    except:
+                        res1 = check_call(['echo', username, 'saml', '>', userNameFilePath])
+                    except IOError:
                         self.log.info('Could not write {} to file or add to userlist.'.format(username))
-                        pass
-                    #try:
-                    #    res2 = check_call('curl -X POST -H "Authorization: token ' + api_token + '" https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username)
-                    #    print(res2)
-                    #except:
-                    #    self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
-                    #    pass
                     try:
-                        res3 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
-                    except:
+                        res3 = check_call(['/srv/jupyterhub/add_users.sh', userNameFilePath])
+                    except RuntimeError:
                         self.log.info('Could not run adduser script for {0}.'.format(username))
                         username = ''
                         pass
                 else:
                     pass
-                elif username.split('_')[-1] == 'mitre':
-                    self.log.info('\tis mpiwg user.')
-                    with open('/srv/jupyterhub/userlist.txt') as file:
-                        userlist = [x.split(' ')[0] for x in file.read().split('\n')]
-                    with open('/srv/jupyterhub/api_token.txt') as file:
-                        api_token = file.readline()
-                    #self.log.info('Got api token: {0}'.format(api_token))
-                    self.log.info('Existing users: {0}'.format(userlist))
-                    if username not in userlist:
-                        try:
-                            self.log.info('Try adding user to db.')
-                            res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
-                            userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
-                            res1 = check_call(['echo',username,'mpiwg','>',userNameFilePath])
-                        except:
-                            self.log.info('Could not write {} to file or add to userlist.'.format(username))
-                            pass
-                        #try:
-                        #    res2 = check_call('curl -X POST -H "Authorization: token ' + api_token + '" https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username)
-                        #    print(res2)
-                        #except:
-                        #    self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
-                        #    pass
-                        try:
-                            res3 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
-                        except:
-                            self.log.info('Could not run adduser script for {0}.'.format(username))
-                            username = ''
-                            pass
-                    else:
-                        pass
+            elif username.split('_')[-1] == 'mitre':
+                self.log.info('\tis mpiwg user.')
+                with open('/srv/jupyterhub/userlist.txt') as file:
+                    userlist = [x.split(' ')[0] for x in file.read().split('\n')]
+                self.log.info('Existing users: {0}'.format(userlist))
+                if username not in userlist:
+                    try:
+                        self.log.info('Try adding user to db.')
+                        res0 = check_call(['echo', username, '>>', '/srv/jupyterhub/userlist.txt'])
+                        userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
+                        res1 = check_call(['echo', username, 'mpiwg', '>', userNameFilePath])
+                    except IOError:
+                        self.log.info('Could not write {} to file or add to userlist.'.format(username))
+                    try:
+                        res3 = check_call(['/srv/jupyterhub/add_users.sh', userNameFilePath])
+                    except RuntimeError:
+                        self.log.info('Could not run adduser script for {0}.'.format(username))
+                        username = ''
+                else:
+                    pass
             else:
                 pass
-
         else:
             self.log.info('Connector error: Could not extract username from id_token, sub or name entry.')
         return username
+
 
 class LocalOpenIDOAuthenticator(LocalAuthenticator, OpenIDOAuthenticator):
     """A version that mixes in local system user creation"""
