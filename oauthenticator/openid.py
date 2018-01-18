@@ -264,7 +264,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         self.log.info('Try adding user to db.')
                         res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
                         userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
-                        res1 = check_call(['echo',username,'>',userNameFilePath])
+                        res1 = check_call(['echo',username,'saml','>',userNameFilePath])
                     except:
                         self.log.info('Could not write {} to file or add to userlist.'.format(username))
                         pass
@@ -282,8 +282,40 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         pass
                 else:
                     pass
+                elif username.split('_')[-1] == 'mitre':
+                    self.log.info('\tis mpiwg user.')
+                    with open('/srv/jupyterhub/userlist.txt') as file:
+                        userlist = [x.split(' ')[0] for x in file.read().split('\n')]
+                    with open('/srv/jupyterhub/api_token.txt') as file:
+                        api_token = file.readline()
+                    #self.log.info('Got api token: {0}'.format(api_token))
+                    self.log.info('Existing users: {0}'.format(userlist))
+                    if username not in userlist:
+                        try:
+                            self.log.info('Try adding user to db.')
+                            res0 = check_call(['echo',username,'>>', '/srv/jupyterhub/userlist.txt'])
+                            userNameFilePath = '/srv/jupyterhub/userfiles/' + username + '.txt'
+                            res1 = check_call(['echo',username,'mpiwg','>',userNameFilePath])
+                        except:
+                            self.log.info('Could not write {} to file or add to userlist.'.format(username))
+                            pass
+                        #try:
+                        #    res2 = check_call('curl -X POST -H "Authorization: token ' + api_token + '" https://c105-188.cloud.gwdg.de:442/hub/api/users/' + username)
+                        #    print(res2)
+                        #except:
+                        #    self.log.info('Could not add {0} to jupyter whitelist.'.format(username))
+                        #    pass
+                        try:
+                            res3 = check_call(['/srv/jupyterhub/add_users.sh',userNameFilePath])
+                        except:
+                            self.log.info('Could not run adduser script for {0}.'.format(username))
+                            username = ''
+                            pass
+                    else:
+                        pass
             else:
                 pass
+
         else:
             self.log.info('Connector error: Could not extract username from id_token, sub or name entry.')
         return username
