@@ -5,21 +5,21 @@ Derived from the GitHub OAuth authenticator.
 """
 
 import os
-import json
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+# import json
+# import requests
+# from requests.adapters import HTTPAdapter
+# from requests.packages.urllib3.util.retry import Retry
 
-from base64 import b64decode, b64encode, urlsafe_b64decode
+from base64 import urlsafe_b64decode
 import re
-from subprocess import check_call, check_output
+from subprocess import check_output
 
 from tornado import gen, escape
 from tornado.auth import GoogleOAuth2Mixin
-from tornado.web import HTTPError
-#from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+# from tornado.web import HTTPError
+# from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from tornado.concurrent import TracebackFuture, return_future, chain_future
+# from tornado.concurrent import TracebackFuture, return_future, chain_future
 from tornado.log import gen_log
 from tornado.stack_context import ExceptionStackContext
 
@@ -27,13 +27,11 @@ from tornado.stack_context import ExceptionStackContext
 from traitlets import Unicode, default
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.utils import url_path_join
+# from jupyterhub.utils import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
-
-
-from tornado.util import PY3, ArgReplacer, unicode_type
+from tornado.util import PY3, ArgReplacer
 import functools
 
 if PY3:
@@ -134,7 +132,6 @@ class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
                    body=body,
                    validate_cert = validate_server_cert)
-
 
     def _on_access_token(self, future, response):
         """Callback function for the exchange to the access token."""
@@ -246,6 +243,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                     )
 
         if username:
+            charSet = {'ü': 'ue', 'ä': 'ae', 'ö': 'oe', 'ß': 'ss'}
+            for key, value in charSet.items():
+                username = re.sub(key, value, username)
             self.log.info('Working on user {0}'.format(username))
             usergroup = username.split('_')[-1]
             if usergroup in ['saml', 'mitre']:
