@@ -226,7 +226,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             try:
                 if substring_print.endswith(connector):
                     try:
-                        payloadString = re.sub('true', 'True', payload)
+                        payloadString = re.sub('false', 'False', re.sub('true', 'True', payload))
                         idDict = ast.literal_eval(payloadString)
                         returned_name = idDict['name']
                         returned_email = idDict['email']
