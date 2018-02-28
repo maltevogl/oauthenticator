@@ -226,17 +226,19 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
             try:
                 if substring_print.endswith(connector):
                     try:
-                        idDict = ast.literal_eval(re.sub('true','True',payload))
+                        payloadString = re.sub('true', 'True', payload)
+                        idDict = ast.literal_eval(payloadString)
                         returned_name = idDict['name']
                         returned_email = idDict['email']
                     except RuntimeError:
                         self.log.info('Could not get id token dict.')
-                        returned_name = re.findall('(?<=name":").+?(?=")', payload)
-                        returned_email = re.findall('(?<=email":").+?(?=")', payload)
+                    returned_name = re.findall('(?<=name":").+?(?=")', payload)
+                    returned_email = re.findall('(?<=email":").+?(?=")', payload)
                     if returned_name:
                         username = re.sub(' ', '', returned_name[0]).lower() + '_' + connector
                     else:
                         username = re.sub(connector, '', substring_print).lower() + '_' + connector
+                    break
                 else:
                     self.log.info(
                         'Could not find {0} in {1}.'.format(
