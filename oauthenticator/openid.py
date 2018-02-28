@@ -12,6 +12,7 @@ import os
 
 from base64 import urlsafe_b64decode
 import re
+import ast
 from subprocess import check_output
 
 from tornado import gen, escape
@@ -224,7 +225,14 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
         for connector in self.CONNECTORS.split(','):
             try:
                 if substring_print.endswith(connector):
-                    returned_name = re.findall('(?<=name":").+?(?=")', payload)
+                    try:
+                        idDict = ast.literal_eval(re.sub('true','True',payload))
+                        returned_name = idDict['name']
+                        returned_email = idDict['email']
+                    except RuntimeError:
+                        self.log.info('Could not get id token dict.')
+                        returned_name = re.findall('(?<=name":").+?(?=")', payload)
+                        returned_email = re.findall('(?<=email":").+?(?=")', payload)
                     if returned_name:
                         username = re.sub(' ', '', returned_name[0]).lower() + '_' + connector
                     else:
@@ -256,13 +264,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                 if username not in userlist:
                     try:
                         self.log.info('Try adding user to db.')
-                        check_output(
-                            'echo {0} {1} >> /srv/jupyterhub/userlist.txt'.format(username, usergroup),
-                            shell=True
-                            )
                         userNameFilePath = '/srv/jupyterhub/userfiles/{0}.txt'.format(username)
                         check_output(
-                            'echo {0} {1} > {2}'.format(username, usergroup, userNameFilePath),
+                            'echo {0} {1} {2} > {3}'.format(username, usergroup, returned_email, userNameFilePath),
                             shell=True
                             )
                     except IOError:
