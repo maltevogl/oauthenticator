@@ -54,14 +54,12 @@ docs/_build/
 # PyBuilder
 target/
 
-# List of currently available users
-userlist.txt
-*.crt
-*.key
-*.pem
+userlist
 ssl/ssl.cert
 ssl/ssl.key
 env
 src
 jupyterhub.sqlite
 jupyterhub_cookie_secret
+
+.vscode/

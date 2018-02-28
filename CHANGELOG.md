@@ -10,6 +10,12 @@ command line for details.
 
 ## 0.7
 
+### [0.7.3] - 2018-02-16
+
+0.7.3 is a security fix.
+It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
+The same fix is backported to 0.6.2.
+
 ### [0.7.2] - 2017-10-27
 
 - Fix CILogon OAuth 2 implementation. ePPN claim is used for default username
@@ -57,6 +63,11 @@ command line for details.
 - GITHUB_HTTP environment variable can be used to talk to HTTP-only GitHub Enterprise deployments.
 
 ## 0.6
+
+### [0.6.2] - 2018-02-16
+
+0.6.2 is a security fix.
+It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 
 ### [0.6.1] - 2017-08-11
 
@@ -118,10 +129,13 @@ command line for details.
 
 - First release
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...HEAD
+
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...HEAD
+[0.7.3]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...0.7.3
 [0.7.2]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...0.7.1
 [0.7.0]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.7.0
+[0.6.2]: https://github.com/jupyterhub/oauthenticator/compare/0.6.1...0.6.2
 [0.6.1]: https://github.com/jupyterhub/oauthenticator/compare/0.6.0...0.6.1
 [0.6.0]:https://github.com/jupyterhub/oauthenticator/compare/0.5.1...0.6.0
 [0.5.1]:https://github.com/jupyterhub/oauthenticator/compare/0.5.0...0.5.1

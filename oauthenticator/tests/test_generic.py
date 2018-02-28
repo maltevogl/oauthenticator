@@ -9,6 +9,7 @@ def user_model(username):
     """Return a user model"""
     return {
         'username': username,
+        'scope': 'basic',
     }
 
 def Authenticator():
@@ -37,5 +38,5 @@ def test_generic(generic_client):
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
     assert 'oauth_user' in auth_state
-
-
+    assert 'refresh_token' in auth_state
+    assert 'scope' in auth_state
