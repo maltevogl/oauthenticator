@@ -16,7 +16,7 @@ from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httputil import url_concat
-from tornado.httpclient import HTTPRequest, AsyncHTTPClient
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
 
 from jupyterhub.auth import LocalAuthenticator
 
@@ -67,12 +67,12 @@ class GitHubOAuthenticator(OAuthenticator):
     github_client_id = Unicode(config=True, help="DEPRECATED")
 
     def _github_client_id_changed(self, name, old, new):
-        self.log.warn("github_client_id is deprecated, use client_id")
+        self.log.warning("github_client_id is deprecated, use client_id")
         self.client_id = new
     github_client_secret = Unicode(config=True, help="DEPRECATED")
 
     def _github_client_secret_changed(self, name, old, new):
-        self.log.warn("github_client_secret is deprecated, use client_secret")
+        self.log.warning("github_client_secret is deprecated, use client_secret")
         self.client_secret = new
 
     client_id_env = 'GITHUB_CLIENT_ID'
@@ -116,7 +116,15 @@ class GitHubOAuthenticator(OAuthenticator):
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        access_token = resp_json['access_token']
+        if 'access_token' in resp_json:
+            access_token = resp_json['access_token']
+        elif 'error_description' in resp_json:
+            raise HTTPError(403,
+                "An access token was not returned: {}".format(
+                    resp_json['error_description']))
+        else:
+            raise HTTPError(500,
+                "Bad response: %s".format(resp))
 
         # Determine who the logged in user is
         req = HTTPRequest("%s://%s/user" % (GITHUB_PROTOCOL, GITHUB_API),
