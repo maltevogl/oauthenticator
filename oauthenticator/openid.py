@@ -230,10 +230,10 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         idDict = ast.literal_eval(payloadString)
                         returned_name = idDict['name']
                         returned_email = idDict['email']
-                    except KeyError:
+                    except:
                         self.log.info('Could not get id token dict.')
-                    returned_name = re.findall('(?<=name":").+?(?=")', payload)
-                    returned_email = re.findall('(?<=email":").+?(?=")', payload)
+                        returned_name = re.findall('(?<=name":").+?(?=")', payload)
+                        returned_email = re.findall('(?<=email":").+?(?=")', payload)
                     if returned_name:
                         username = re.sub(' ', '', returned_name[0]).lower() + '_' + connector
                     else:
