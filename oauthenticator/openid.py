@@ -235,7 +235,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
                         returned_name = re.findall('(?<=name":").+?(?=")', payload)
                         returned_email = re.findall('(?<=email":").+?(?=")', payload)
                     if returned_name:
-                        username = re.sub(' ', '', returned_name[0]).lower() + '_' + connector
+                        if type(returned_name) == list:
+                            returned_name = returned_name[0]
+                        username = re.sub(' ', '', returned_name).lower() + '_' + connector
                     else:
                         username = re.sub(connector, '', substring_print).lower() + '_' + connector
                     break
