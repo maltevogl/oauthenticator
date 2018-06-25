@@ -140,7 +140,7 @@ class GlobusOAuthenticator(OAuthenticator):
             globus_data = base64.b64encode(
                 pickle.dumps(state)
             )
-            spawner.environment['GLOBUS_DATA'] = globus_data
+            spawner.environment['GLOBUS_DATA'] = globus_data.decode('utf-8')
 
     def globus_portal_client(self):
         return globus_sdk.ConfidentialAppAuthClient(
@@ -166,7 +166,9 @@ class GlobusOAuthenticator(OAuthenticator):
         # Doing the code for token for id_token exchange
         tokens = client.oauth2_exchange_code_for_tokens(code)
         id_token = tokens.decode_id_token(client)
-        username, domain = id_token.get('preferred_username').split('@')
+        # It's possible for identity provider domains to be namespaced
+        # https://docs.globus.org/api/auth/specification/#identity_provider_namespaces # noqa
+        username, domain = id_token.get('preferred_username').split('@', 1)
 
         if self.identity_provider and domain != self.identity_provider:
             raise HTTPError(
