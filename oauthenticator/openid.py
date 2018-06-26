@@ -34,15 +34,7 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 CONNECTORS = os.environ.get('CONNECTOR_LIST')
 
-_OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
-if _OPENID_ENDPOINT.startswith('http'):
-    _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
-    _OAUTH_ACCESS_TOKEN_URL = "%s/token" % _OPENID_ENDPOINT
-    _OAUTH_USERINFO_URL = "%s/auth" % _OPENID_ENDPOINT
-else:
-    _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
-    _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
-    _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
+
 _OAUTH_NO_CALLBACKS = False
 _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
@@ -148,6 +140,15 @@ _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
 
 class OpenIDLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
+    _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
+    if _OPENID_ENDPOINT.startswith('http'):
+        _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "%s/auth" % _OPENID_ENDPOINT
+    else:
+        _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
     @property
     def scope(self):
         return self.authenticator.scope
