@@ -32,12 +32,6 @@ from jupyterhub.utils import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
-CONNECTORS = os.environ.get('CONNECTOR_LIST')
-
-
-_OAUTH_NO_CALLBACKS = False
-_OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
-
 #
 # from tornado.util import PY3, ArgReplacer
 # import functools
@@ -140,6 +134,7 @@ _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
 
 
 class OpenIDLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
+
     _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
     if _OPENID_ENDPOINT.startswith('http'):
         _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
@@ -160,6 +155,10 @@ class OpenIDOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
 
 class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
+    CONNECTORS = os.environ.get('CONNECTOR_LIST')
+    _OAUTH_NO_CALLBACKS = False
+    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
+    
     login_handler = OpenIDLoginHandler
     callback_handler = OpenIDOAuthHandler
 
@@ -195,7 +194,7 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
-            code=code,
+            code=code
             #validate_server_cert=validate_server_cert,
             )
 
