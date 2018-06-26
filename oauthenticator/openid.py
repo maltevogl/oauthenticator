@@ -134,7 +134,7 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
 
 class OpenIDLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
-
+    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
     _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
     if _OPENID_ENDPOINT.startswith('http'):
         _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
@@ -144,21 +144,20 @@ class OpenIDLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
         _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
         _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
         _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
+
     @property
     def scope(self):
         return self.authenticator.scope
 
 
 class OpenIDOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
+    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
     pass
 
 
 class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-
-    CONNECTORS = os.environ.get('CONNECTOR_LIST')
-    _OAUTH_NO_CALLBACKS = False
     _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
-    
+    CONNECTORS = os.environ.get('CONNECTOR_LIST')
     login_handler = OpenIDLoginHandler
     callback_handler = OpenIDOAuthHandler
 
@@ -186,16 +185,17 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         self.log.info(
             'Validate cert: %r', validate_server_cert
             )
-        #self.log.info(
-        #    'openid settings: {0}'.format(
-        #        handler.settings['coreos_dex_oauth']
-        #        )
-        #    )
+
+        self.log.info(
+            'openid settings key: {0}'.format(
+                handler.settings['coreos_dex_oauth']
+                )
+            )
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code
-            #validate_server_cert=validate_server_cert,
+            # validate_server_cert=validate_server_cert,
             )
 
         idtoken = user['id_token'].split('.')[0]
