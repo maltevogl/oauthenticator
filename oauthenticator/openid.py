@@ -183,7 +183,7 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             'response_type': 'code'
         }
 
-        #validate_server_cert = self.validate_server_cert
+        validate_server_cert = self.validate_server_cert
         self.log.info(
             'Validate cert: %r', validate_server_cert
             )
