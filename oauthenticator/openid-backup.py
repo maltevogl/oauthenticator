@@ -28,137 +28,133 @@ from tornado.stack_context import ExceptionStackContext
 from traitlets import Unicode, default
 
 from jupyterhub.auth import LocalAuthenticator
-from jupyterhub.utils import url_path_join
+# from jupyterhub.utils import url_path_join
 
 from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 
-CONNECTORS = os.environ.get('CONNECTOR_LIST')
+from tornado.util import PY3, ArgReplacer
+import functools
 
-_OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
-if _OPENID_ENDPOINT.startswith('http'):
-    _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
-    _OAUTH_ACCESS_TOKEN_URL = "%s/token" % _OPENID_ENDPOINT
-    _OAUTH_USERINFO_URL = "%s/auth" % _OPENID_ENDPOINT
+if PY3:
+    import urllib.parse as urlparse
+    import urllib.parse as urllib_parse
+    long = int
 else:
-    _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
-    _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
-    _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
-_OAUTH_NO_CALLBACKS = False
-_OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
-
-#
-# from tornado.util import PY3, ArgReplacer
-# import functools
-#
-# if PY3:
-#     import urllib.parse as urlparse
-#     import urllib.parse as urllib_parse
-#     long = int
-# else:
-#     import urlparse
-#     import urllib as urllib_parse
+    import urlparse
+    import urllib as urllib_parse
 
 
-# class AuthError(Exception):
-#     pass
-#
-#
-# def _auth_future_to_callback(callback, future):
-#     try:
-#         result = future.result()
-#     except AuthError as e:
-#         gen_log.warning(str(e))
-#         result = None
-#     callback(result)
-#
-#
-# def _auth_return_future(f):
-#     """
-#     Similar to tornado.concurrent.return_future, but uses the auth
-#     module's legacy callback interface.
-#
-#     Note that when using this decorator the ``callback`` parameter
-#     inside the function will actually be a future.
-#     """
-#     replacer = ArgReplacer(f, 'callback')
-#
-#     @functools.wraps(f)
-#     def wrapper(*args, **kwargs):
-#         future = Future()
-#         callback, args, kwargs = replacer.replace(future, args, kwargs)
-#         if callback is not None:
-#             future.add_done_callback(
-#                 functools.partial(_auth_future_to_callback, callback))
-#
-#         def handle_exception(typ, value, tb):
-#             if future.done():
-#                 return False
-#             else:
-#                 future.set_exc_info((typ, value, tb))
-#                 return True
-#         with ExceptionStackContext(handle_exception):
-#             f(*args, **kwargs)
-#         return future
-#     return wrapper
+class AuthError(Exception):
+    pass
 
 
-# class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
-#
-#     """ OpenID OAuth2 Mixin.
-#     An OpenID OAuth2 mixin to use GoogleLoginHandler with
-#     different Identity Providers using the OpenID standard. The current
-#     setup should work with MITREid Connect servers. In addtion to the usual
-#     parameters client ID and secret, the environment variable OPENID_HOST
-#     should be set to the URL of the OpenID provider. The API endpoints
-#     might have to be changed, depending on the ID provider.
-#     """
-#
-#
-#
-#     @_auth_return_future
-#     def get_authenticated_user(self, redirect_uri, code, callback, validate_server_cert):
-#         """Handles the login for the Google user, returning an access token."""
-#         http = self.get_auth_http_client()
-#
-#         body = urllib_parse.urlencode({
-#             "redirect_uri": redirect_uri,
-#             "code": code,
-#             "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
-#             "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
-#             "grant_type": "authorization_code",
-#         })
-#         self.log.info('http req body: %r', body)
-#         self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
-#         self.log.info('callback url: %r', callback)
-#         http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
-#                    functools.partial(self._on_access_token, callback),
-#                    method="POST",
-#                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
-#                    body=body,
-#                    validate_cert = validate_server_cert)
-#
-#     def _on_access_token(self, future, response):
-#         """Callback function for the exchange to the access token."""
-#         if response.error:
-#             future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
-#             return
-#
-#         args = escape.json_decode(response.body)
-#         future.set_result(args)
+def _auth_future_to_callback(callback, future):
+    try:
+        result = future.result()
+    except AuthError as e:
+        gen_log.warning(str(e))
+        result = None
+    callback(result)
 
 
-class OpenIDLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
+def _auth_return_future(f):
+    """
+    Similar to tornado.concurrent.return_future, but uses the auth
+    module's legacy callback interface.
+
+    Note that when using this decorator the ``callback`` parameter
+    inside the function will actually be a future.
+    """
+    replacer = ArgReplacer(f, 'callback')
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        future = Future()
+        callback, args, kwargs = replacer.replace(future, args, kwargs)
+        if callback is not None:
+            future.add_done_callback(
+                functools.partial(_auth_future_to_callback, callback))
+
+        def handle_exception(typ, value, tb):
+            if future.done():
+                return False
+            else:
+                future.set_exc_info((typ, value, tb))
+                return True
+        with ExceptionStackContext(handle_exception):
+            f(*args, **kwargs)
+        return future
+    return wrapper
+
+
+class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
+
+    """ OpenID OAuth2 Mixin.
+    An OpenID OAuth2 mixin to use GoogleLoginHandler with
+    different Identity Providers using the OpenID standard. The current
+    setup should work with MITREid Connect servers. In addtion to the usual
+    parameters client ID and secret, the environment variable OPENID_HOST
+    should be set to the URL of the OpenID provider. The API endpoints
+    might have to be changed, depending on the ID provider.
+    """
+
+    CONNECTORS = os.environ.get('CONNECTOR_LIST')
+
+    _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
+    if _OPENID_ENDPOINT.startswith('http'):
+        _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "%s/auth" % _OPENID_ENDPOINT
+    else:
+        _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
+    _OAUTH_NO_CALLBACKS = False
+    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
+
+    @_auth_return_future
+    def get_authenticated_user(self, redirect_uri, code, callback, validate_server_cert):
+        """Handles the login for the Google user, returning an access token."""
+        http = self.get_auth_http_client()
+
+        body = urllib_parse.urlencode({
+            "redirect_uri": redirect_uri,
+            "code": code,
+            "client_id": self.settings[self._OAUTH_SETTINGS_KEY]['key'],
+            "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]['secret'],
+            "grant_type": "authorization_code",
+        })
+        self.log.info('http req body: %r', body)
+        self.log.info('acc tok url: %r', self._OAUTH_ACCESS_TOKEN_URL)
+        self.log.info('callback url: %r', callback)
+        http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
+                   functools.partial(self._on_access_token, callback),
+                   method="POST",
+                   headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                   body=body,
+                   validate_cert = validate_server_cert)
+
+    def _on_access_token(self, future, response):
+        """Callback function for the exchange to the access token."""
+        if response.error:
+            future.set_exception(AuthError('OpenID auth error: %s' % str(response)))
+            return
+
+        args = escape.json_decode(response.body)
+        future.set_result(args)
+
+
+class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
     @property
     def scope(self):
         return self.authenticator.scope
 
 
-class OpenIDOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
+class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
     pass
 
 
-class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-
+class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
     login_handler = OpenIDLoginHandler
     callback_handler = OpenIDOAuthHandler
 
@@ -182,7 +178,7 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             'response_type': 'code'
         }
 
-        #validate_server_cert = self.validate_server_cert
+        validate_server_cert = self.validate_server_cert
         self.log.info(
             'Validate cert: %r', validate_server_cert
             )
@@ -198,23 +194,17 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             validate_server_cert=validate_server_cert,
             )
 
-        idtoken = user['id_token'].split('.')[0]
-
-        if not idtoken:
-            handler.clear_all_cookies()
-            raise HTTPError(500, 'Dex authentication failed')
-
-        # self.log.info('full user json is: {}'.format(user))
+        self.log.info('full user json is: {}'.format(user))
 
         payload_encoded = user['id_token'].split('.')[1]
         payload = urlsafe_b64decode(
             payload_encoded + '=' * (4 - len(payload_encoded) % 4)
             ).decode('utf8')
-        # self.log.info(
-        #    'urlsafe decoded payload is: {}'.format(
-        #        payload
-        #        )
-        #    )
+        self.log.info(
+            'urlsafe decoded payload is: {}'.format(
+                payload
+                )
+            )
         userstring = re.findall('(?<=sub":").+?(?=",)', payload)[0]
         substring = urlsafe_b64decode(
             userstring + '=' * (4 - len(userstring) % 4)
@@ -315,4 +305,5 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
 
 class LocalOpenIDOAuthenticator(LocalAuthenticator, OpenIDOAuthenticator):
     """A version that mixes in local system user creation."""
+
     pass
