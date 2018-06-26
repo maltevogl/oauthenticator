@@ -187,16 +187,16 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
         self.log.info(
             'Validate cert: %r', validate_server_cert
             )
-        self.log.info(
-            'openid settings: {0}'.format(
-                handler.settings['coreos_dex_oauth']
-                )
-            )
+        #self.log.info(
+        #    'openid settings: {0}'.format(
+        #        handler.settings['coreos_dex_oauth']
+        #        )
+        #    )
 
         user = yield handler.get_authenticated_user(
             redirect_uri=self.get_callback_url(handler),
             code=code,
-            validate_server_cert=validate_server_cert,
+            #validate_server_cert=validate_server_cert,
             )
 
         idtoken = user['id_token'].split('.')[0]
