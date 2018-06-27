@@ -91,7 +91,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     @gen.coroutine
     def authenticate(self, handler, data=None):
         connectors = os.environ.get('CONNECTOR_LIST','').split(',')
-        
+
         if connectors != ['']:
             pass
         else:
@@ -173,7 +173,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         # TODO: Fix to make portable
         ###
 
-        for connector in self.connectors:
+        for connector in connectors:
             try:
                 if substring_print.endswith(connector):
                     try:
