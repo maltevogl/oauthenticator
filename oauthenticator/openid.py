@@ -41,16 +41,15 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
 
 
 class OpenIDOAuthenticator(OAuthenticator):
-    @default('scope')
-    def _scope_default(self):
-        return ['openid', 'profile', 'email', 'groups']
+
+    login_handler = OpenIDLoginHandler
+
+    scope =  ['openid', 'profile', 'email', 'groups']
 
     login_service = Unicode(
         "Dex",
         config=True
     )
-
-    login_handler = OpenIDLoginHandler
 
     userdata_url = Unicode(
         os.environ.get('OAUTH2_USERDATA_URL', ''),
