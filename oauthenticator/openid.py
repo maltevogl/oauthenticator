@@ -45,7 +45,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     scope =  ['openid', 'profile', 'email', 'groups']
 
-    self.connectors = os.environ.get('CONNECTOR_LIST','').split(',')
+    def connectors(self):
+        return os.environ.get('CONNECTOR_LIST','').split(',')
+
     if self.connectors != ['']:
         pass
     else:
