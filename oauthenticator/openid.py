@@ -45,14 +45,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     scope =  ['openid', 'profile', 'email', 'groups']
 
-    def connectors(self):
-        return os.environ.get('CONNECTOR_LIST','').split(',')
-
-    if self.connectors != ['']:
-        pass
-    else:
-        raise ValueError("Please set the CONNECTOR_LIST environment variable")
-
     login_service = Unicode(
         "Dex",
         config=True
@@ -98,6 +90,13 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
+        connectors = os.environ.get('CONNECTOR_LIST','').split(',')
+        
+        if connectors != ['']:
+            pass
+        else:
+            raise ValueError("Please set the CONNECTOR_LIST environment variable")
+
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
