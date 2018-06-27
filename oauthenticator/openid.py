@@ -31,8 +31,6 @@ class OpenIDEnvMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
     _OAUTH_USERDATA_PARAMS = os.environ.get('OAUTH2_USERDATA_PARAMS', '')
-    _CONNECTORS = os.environ.get('CONNECTOR_LIST')
-
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
     @property
@@ -46,6 +44,12 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     login_handler = OpenIDLoginHandler
 
     scope =  ['openid', 'profile', 'email', 'groups']
+
+    connectors = os.environ.get('CONNECTOR_LIST','').split(',')
+    if connectors != ['']:
+        pass
+    else:
+        raise ValueError("Please set the CONNECTOR_LIST environment variable")
 
     login_service = Unicode(
         "Dex",
@@ -168,7 +172,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         # TODO: Fix to make portable
         ###
 
-        for connector in self.CONNECTORS.split(','):
+        for connector in connectors:
             try:
                 if substring_print.endswith(connector):
                     try:
