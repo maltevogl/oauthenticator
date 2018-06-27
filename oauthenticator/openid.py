@@ -34,10 +34,16 @@ class OpenIDEnvMixin(OAuth2Mixin):
 
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
+    @property
+    def scope(self):
+        return self.authenticator.scope
     pass
 
 
 class OpenIDOAuthenticator(OAuthenticator):
+    @default('scope')
+    def _scope_default(self):
+        return ['openid', 'profile', 'email', 'groups']
 
     login_service = Unicode(
         "Dex",
