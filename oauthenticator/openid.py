@@ -27,24 +27,24 @@ from traitlets import Unicode, Dict, Bool
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
-class GenericEnvMixin(OAuth2Mixin):
+class OpenIDEnvMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
     _OAUTH_USERDATA_PARAMS = os.environ.get('OAUTH2_USERDATA_PARAMS', '')
 
 
-class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
+class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
     pass
 
 
-class GenericOAuthenticator(OAuthenticator):
+class OpenIDOAuthenticator(OAuthenticator):
 
     login_service = Unicode(
         "Dex",
         config=True
     )
 
-    login_handler = GenericLoginHandler
+    login_handler = OpenIDLoginHandler
 
     userdata_url = Unicode(
         os.environ.get('OAUTH2_USERDATA_URL', ''),
@@ -252,7 +252,7 @@ class GenericOAuthenticator(OAuthenticator):
         }
 
 
-class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
+class LocalOpenIDOAuthenticator(LocalAuthenticator, OpenIDOAuthenticator):
 
     """A version that mixes in local system user creation"""
     pass
