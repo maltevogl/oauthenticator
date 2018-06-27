@@ -45,8 +45,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     scope =  ['openid', 'profile', 'email', 'groups']
 
-    connectors = os.environ.get('CONNECTOR_LIST','').split(',')
-    if connectors != ['']:
+    self.connectors = os.environ.get('CONNECTOR_LIST','').split(',')
+    if self.connectors != ['']:
         pass
     else:
         raise ValueError("Please set the CONNECTOR_LIST environment variable")
@@ -172,7 +172,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         # TODO: Fix to make portable
         ###
 
-        for connector in connectors:
+        for connector in self.connectors:
             try:
                 if substring_print.endswith(connector):
                     try:
