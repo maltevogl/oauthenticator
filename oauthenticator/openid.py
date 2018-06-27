@@ -31,6 +31,7 @@ class OpenIDEnvMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
     _OAUTH_USERDATA_PARAMS = os.environ.get('OAUTH2_USERDATA_PARAMS', '')
+    _CONNECTORS = os.environ.get('CONNECTOR_LIST')
 
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
@@ -40,7 +41,7 @@ class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
     pass
 
 
-class OpenIDOAuthenticator(OAuthenticator):
+class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     login_handler = OpenIDLoginHandler
 
@@ -251,6 +252,7 @@ class OpenIDOAuthenticator(OAuthenticator):
             'auth_state': {
                 'access_token': access_token,
                 'refresh_token': refresh_token,
+                'id_token': id_token,
                 'oauth_user': resp_json,
                 'scope': scope,
             }
