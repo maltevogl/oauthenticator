@@ -88,16 +88,28 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 #     return wrapper
 
 
-# class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
-#
-#     """ OpenID OAuth2 Mixin.
-#     An OpenID OAuth2 mixin to use GoogleLoginHandler with
-#     different Identity Providers using the OpenID standard. The current
-#     setup should work with MITREid Connect servers. In addtion to the usual
-#     parameters client ID and secret, the environment variable OPENID_HOST
-#     should be set to the URL of the OpenID provider. The API endpoints
-#     might have to be changed, depending on the ID provider.
-#     """
+class OpenIDOAuth2Mixin(GoogleOAuth2Mixin):
+
+    """ OpenID OAuth2 Mixin.
+    An OpenID OAuth2 mixin to use GoogleLoginHandler with
+    different Identity Providers using the OpenID standard. The current
+    setup should work with MITREid Connect servers. In addtion to the usual
+    parameters client ID and secret, the environment variable OPENID_HOST
+    should be set to the URL of the OpenID provider. The API endpoints
+    might have to be changed, depending on the ID provider.
+    """
+
+    CONNECTORS = os.environ.get('CONNECTOR_LIST')
+    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
+    _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
+    if _OPENID_ENDPOINT.startswith('http'):
+        _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "%s/auth" % _OPENID_ENDPOINT
+    else:
+        _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
+        _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
+        _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
 #
 #
 #
@@ -133,31 +145,19 @@ from .oauth2 import OAuthLoginHandler, OAuthCallbackHandler, OAuthenticator
 #         future.set_result(args)
 
 
-class OpenIDLoginHandler(OAuthLoginHandler, GoogleOAuth2Mixin):
-    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
-    _OPENID_ENDPOINT = os.environ.get('OPENID_HOST')
-    if _OPENID_ENDPOINT.startswith('http'):
-        _OAUTH_AUTHORIZE_URL = "%s/auth" % _OPENID_ENDPOINT
-        _OAUTH_ACCESS_TOKEN_URL = "%s/token" % _OPENID_ENDPOINT
-        _OAUTH_USERINFO_URL = "%s/auth" % _OPENID_ENDPOINT
-    else:
-        _OAUTH_AUTHORIZE_URL = "https://%s/auth" % _OPENID_ENDPOINT
-        _OAUTH_ACCESS_TOKEN_URL = "https://%s/token" % _OPENID_ENDPOINT
-        _OAUTH_USERINFO_URL = "https://%s/auth" % _OPENID_ENDPOINT
+class OpenIDLoginHandler(OAuthLoginHandler, OpenIDOAuth2Mixin):
 
     @property
     def scope(self):
         return self.authenticator.scope
 
 
-class OpenIDOAuthHandler(OAuthCallbackHandler, GoogleOAuth2Mixin):
-    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
+class OpenIDOAuthHandler(OAuthCallbackHandler, OpenIDOAuth2Mixin):
     pass
 
 
-class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
-    _OAUTH_SETTINGS_KEY = 'coreos_dex_oauth'
-    CONNECTORS = os.environ.get('CONNECTOR_LIST')
+class OpenIDOAuthenticator(OAuthenticator, OpenIDOAuth2Mixin):
+
     login_handler = OpenIDLoginHandler
     callback_handler = OpenIDOAuthHandler
 
@@ -187,7 +187,8 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             )
 
         self.log.info(
-            'openid settings key: {0}'.format(
+            'openid settings key {0}, values: {1}'.format(
+                self._OAUTH_SETTINGS_KEY,
                 handler.settings['coreos_dex_oauth']
                 )
             )
@@ -204,17 +205,11 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             handler.clear_all_cookies()
             raise HTTPError(500, 'Dex authentication failed')
 
-        # self.log.info('full user json is: {}'.format(user))
-
         payload_encoded = user['id_token'].split('.')[1]
         payload = urlsafe_b64decode(
             payload_encoded + '=' * (4 - len(payload_encoded) % 4)
             ).decode('utf8')
-        # self.log.info(
-        #    'urlsafe decoded payload is: {}'.format(
-        #        payload
-        #        )
-        #    )
+
         userstring = re.findall('(?<=sub":").+?(?=",)', payload)[0]
         substring = urlsafe_b64decode(
             userstring + '=' * (4 - len(userstring) % 4)
@@ -228,9 +223,6 @@ class OpenIDOAuthenticator(OAuthenticator, GoogleOAuth2Mixin):
             )
 
         username = ''
-        ###
-        # TODO: Fix to make portable
-        ###
 
         for connector in self.CONNECTORS.split(','):
             try:
