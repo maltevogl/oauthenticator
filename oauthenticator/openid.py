@@ -46,7 +46,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     scope =  ['openid', 'profile', 'email', 'groups']
 
     login_service = Unicode(
-        "Dex",
+        os.environ.get('LOGIN_SERVICE', 'dex'),
         config=True
     )
 
