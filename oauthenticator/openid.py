@@ -211,7 +211,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
                 username = re.sub(key, value, username)
             self.log.info('Working on user {0}'.format(username))
             usergroup = username.split('_')[-1]
-            if usergroup in ['saml', 'mitre']:
+            if usergroup in connectors:
                 self.log.info('\tis {0} user.'.format(usergroup))
                 with open('/srv/jupyterhub/userlist.txt') as file:
                     userlist = [x.split(' ')[0] for x in file.read().split('\n')]
@@ -245,6 +245,11 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
                 else:
                     pass
             else:
+                self.log.info(
+                    'User group {0} not in connector list {1}.'.format(
+                        usergroup, connectors
+                        )
+                    )
                 pass
         else:
             self.log.info(
