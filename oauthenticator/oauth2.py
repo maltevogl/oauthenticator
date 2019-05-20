@@ -7,6 +7,7 @@ Most of the code c/o Kyle Kelley (@rgbkrk)
 import base64
 import json
 import os
+from urllib.parse import quote, urlparse
 import uuid
 
 from tornado import gen, web
@@ -69,7 +70,24 @@ class OAuthLoginHandler(BaseHandler):
 
     _state = None
     def get_state(self):
-        next_url = self.get_argument('next', None)
+        next_url = original_next_url = self.get_argument('next', None)
+        if next_url:
+            # avoid browsers treating \ as /
+            next_url = next_url.replace('\\', quote('\\'))
+            # disallow hostname-having urls,
+            # force absolute path redirect
+            urlinfo = urlparse(next_url)
+            next_url = urlinfo._replace(
+                scheme='',
+                netloc='',
+                path='/' + urlinfo.path.lstrip('/'),
+            ).geturl()
+            if next_url != original_next_url:
+                self.log.warning(
+                    "Ignoring next_url %r, using %r",
+                    original_next_url,
+                    next_url,
+                )
         if self._state is None:
             self._state = _serialize_state({
                 'state_id': uuid.uuid4().hex,
@@ -126,20 +144,29 @@ class OAuthCallbackHandler(BaseHandler):
         if cookie_state != url_state:
             self.log.warning("OAuth state mismatch: %s != %s", cookie_state, url_state)
             raise web.HTTPError(400, "OAuth state mismatch")
-    
+
+    def check_error(self):
+        """Check the OAuth code"""
+        error = self.get_argument("error", False)
+        if error:
+            message = self.get_argument("error_description", error)
+            raise web.HTTPError(400, "OAuth error: %s" % message)
+
     def check_code(self):
         """Check the OAuth code"""
         if not self.get_argument("code", False):
             raise web.HTTPError(400, "OAuth callback made without a code")
-    
+
     def check_arguments(self):
         """Validate the arguments of the redirect
-        
+
         Default:
-        
+
+        - check for oauth-standard error, error_description arguments
         - check that there's a code
-        - check that state matches 
+        - check that state matches
         """
+        self.check_error()
         self.check_code()
         self.check_state()
 

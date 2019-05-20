@@ -51,7 +51,6 @@ class GenericOAuthenticator(OAuthenticator):
         help="Access token endpoint URL"
     )
     extra_params = Dict(
-        os.environ.get('OAUTH2_AUTHENTICATION_PARAMS', {}),
         help="Extra parameters for first POST request"
     ).tag(config=True)
 
@@ -60,11 +59,9 @@ class GenericOAuthenticator(OAuthenticator):
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
     )
-    userdata_params = {'scope':['openid','profile','email']}
-    #Dict(
-    #    os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
-    #    help="Userdata params to get user data login information"
-    #).tag(config=True)
+    userdata_params = Dict(
+        help="Userdata params to get user data login information"
+    ).tag(config=True)
 
     userdata_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_METHOD', 'GET'),
@@ -122,7 +119,9 @@ class GenericOAuthenticator(OAuthenticator):
         access_token = resp_json['access_token']
         refresh_token = resp_json.get('refresh_token', None)
         token_type = resp_json['token_type']
-        scope = (resp_json.get('scope', '')).split(' ')
+        scope = resp_json.get('scope', '')
+        if (isinstance(scope, str)):
+                scope = scope.split(' ')
 
         # Determine who the logged in user is
         headers = {
@@ -139,7 +138,6 @@ class GenericOAuthenticator(OAuthenticator):
                           method=self.userdata_method,
                           headers=headers,
                           validate_cert=self.tls_verify,
-                          body=urllib.parse.urlencode({'access_token': access_token})
                           )
         resp = yield http_client.fetch(req)
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))

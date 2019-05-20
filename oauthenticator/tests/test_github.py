@@ -33,16 +33,15 @@ def github_client(client):
     return client
 
 
-@mark.gen_test
-def test_github(github_client):
+async def test_github(github_client):
     authenticator = GitHubOAuthenticator()
     handler = github_client.handler_for_user(user_model('wash'))
-    user_info = yield authenticator.authenticate(handler)
+    user_info = await authenticator.authenticate(handler)
     name = user_info['name']
     assert name == 'wash'
     auth_state = user_info['auth_state']
     assert 'access_token' in auth_state
-    
+
     assert auth_state == {
         'access_token': auth_state['access_token'],
         'github_user': {
@@ -59,8 +58,7 @@ def make_link_header(urlinfo, page):
                     .format(urlinfo.scheme, urlinfo.netloc, urlinfo.path, page)}
 
 
-@mark.gen_test
-def test_org_whitelist(github_client):
+async def test_org_whitelist(github_client):
     client = github_client
     authenticator = GitHubOAuthenticator()
 
@@ -78,7 +76,7 @@ def test_org_whitelist(github_client):
         team = member_regex.match(urlinfo.path).group(1)
 
         if team not in teams:
-            return HTTPResponse(400, request)
+            return HTTPResponse(request, 404)
 
         if not paginate:
             return [user_model(m) for m in teams[team]]
@@ -104,33 +102,51 @@ def test_org_whitelist(github_client):
                         headers=HTTPHeaders(headers),
                         buffer=BytesIO(json.dumps(ret).encode('utf-8')))
 
+
+    membership_regex = re.compile(r'/orgs/(.*)/members/(.*)')
+
+    def team_membership(request):
+        urlinfo = urlparse(request.url)
+        urlmatch = membership_regex.match(urlinfo.path)
+        team = urlmatch.group(1)
+        username = urlmatch.group(2)
+        print('Request team = %s, username = %s' % (team, username))
+        if team not in teams:
+            print('Team not found: team = %s' %(team))
+            return HTTPResponse(request, 404)
+        if username not in teams[team]:
+            print('Member not found: team = %s, username = %s' %(team, username))
+            return HTTPResponse(request, 404)
+        return HTTPResponse(request, 204)
+
+
     ## Perform tests
 
     for paginate in (False, True):
-        client.hosts['api.github.com'].append(
-            (member_regex, functools.partial(team_members, paginate)),
-        )
+        client_hosts = client.hosts['api.github.com']
+        client_hosts.append((membership_regex, team_membership))
+        client_hosts.append((member_regex, functools.partial(team_members, paginate)))
 
         authenticator.github_organization_whitelist = ['blue']
 
         handler = client.handler_for_user(user_model('caboose'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user['name'] == 'caboose'
 
         handler = client.handler_for_user(user_model('donut'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user is None
 
         # reverse it, just to be safe
         authenticator.github_organization_whitelist = ['red']
 
         handler = client.handler_for_user(user_model('caboose'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user is None
 
         handler = client.handler_for_user(user_model('donut'))
-        user = yield authenticator.authenticate(handler)
+        user = await authenticator.authenticate(handler)
         assert user['name'] == 'donut'
 
-        client.hosts['api.github.com'].pop()
-
+        client_hosts.pop()
+        client_hosts.pop()

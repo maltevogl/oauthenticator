@@ -8,6 +8,37 @@ command line for details.
 
 ## [Unreleased]
 
+## 0.8
+
+### [0.8.2] - 2019-04-16
+
+- Validate login URL redirects to avoid Open Redirect issues.
+
+### [0.8.1] - 2019-02-28
+
+- Provide better error messages
+- Allow auth scope to be array or strings
+- `GitHubOAuthenticator`: More efficient `org_whitelist` check
+- Use pytest-asyncio instead of pytest-tornado
+- CILogon: New additional_username_claims config for linked identities, fallback to the primary username claim
+- `GitLabOAuthenticator`: New `project_id_whitelist` config to whitelist users who have Developer+ access to the project
+- `GoogleOAuthenticator`: Allow email domains (`hosted_domain`) to be a list
+- Add `jupyterhub-authenticator` entrypoints for jupyterhub 1.0.
+- Cleanup & bugfixes
+
+### [0.8.0] - 2018-08-10
+
+- Add `azuread.AzureADOAuthenticator`
+- Add `CILogonOAuthenticator.idp_whitelist` and `CILogonOAuthenticator.strip_idp_domain` options
+- Add `GenericOAuthenticator.tls_verify` and `GenericOAuthenticator.extra_params` options
+- Add refresh token and scope to generic oauthenticator auth state
+- Better error messages when GitHub oauth fails
+- Stop normalizing mediawiki usernames, which can be case-sensitive
+- Fixes for group-membership checks with GitLab
+- Bugfixes in various authenticators
+- Deprecate GITLAB_HOST in favor of GITLAB_URL, since we expect `https://` in the url, not just the host.
+
+
 ## 0.7
 
 ### [0.7.3] - 2018-02-16
@@ -130,7 +161,10 @@ It fixes handling of `gitlab_group_whitelist` when using GitLabOAuthenticator.
 - First release
 
 
-[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...HEAD
+[Unreleased]: https://github.com/jupyterhub/oauthenticator/compare/0.8.2...HEAD
+[0.8.2]: https://github.com/jupyterhub/oauthenticator/compare/0.8.1...0.8.2
+[0.8.1]: https://github.com/jupyterhub/oauthenticator/compare/0.8.0...0.8.1
+[0.8.0]: https://github.com/jupyterhub/oauthenticator/compare/0.7.3...0.8.0
 [0.7.3]: https://github.com/jupyterhub/oauthenticator/compare/0.7.2...0.7.3
 [0.7.2]: https://github.com/jupyterhub/oauthenticator/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/jupyterhub/oauthenticator/compare/0.7.0...0.7.1
