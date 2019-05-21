@@ -29,13 +29,13 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 class OpenIDEnvMixin(OAuth2Mixin):
 
-    oauth_access_token_url = Unicode(
+    _OAUTH_ACCESS_TOKEN_URL = Unicode(
         os.environ.get('OAUTH2_TOKEN_URL', ''),
         config=True,
         help="OpenID Connect endpoint for access token"
     )
 
-    oauth_authorize_url = Unicode(
+    _OAUTH_AUTHORIZE_URL = Unicode(
         os.environ.get('OAUTH2_AUTHORIZE_URL', ''),
         config=True,
         help="OpenID Connect enpoint for authorization"
