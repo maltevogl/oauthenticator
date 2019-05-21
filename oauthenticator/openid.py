@@ -22,7 +22,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Dict, Bool
+from traitlets import Unicode, Dict, Bool, List
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
