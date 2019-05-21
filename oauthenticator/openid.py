@@ -42,9 +42,9 @@ class OpenIDEnvMixin(OAuth2Mixin):
     )
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
-    @property
-    def scope(self):
-        return self.authenticator.scope
+    #@property
+    #def scope(self):
+    #    return self.authenticator.scope
     pass
 
 
