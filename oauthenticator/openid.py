@@ -98,7 +98,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         help="Disable TLS verification on http request"
     )
 
-    connectors = Unicode(
+    connectors = List(
         os.environ.get('CONNECTOR_LIST','').split(','),
         config=True,
         help="List of allowed IDP endpoints"
