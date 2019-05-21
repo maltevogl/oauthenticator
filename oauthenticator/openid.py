@@ -42,9 +42,6 @@ class OpenIDEnvMixin(OAuth2Mixin):
     )
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
-    #@property
-    #def scope(self):
-    #    return self.authenticator.scope
     pass
 
 
@@ -55,9 +52,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     scope =  ['openid', 'profile', 'email', 'groups']
 
     login_service = Unicode(
-        os.environ.get('LOGIN_SERVICE', ''),
+        'OpenID Connect',
         config=True,
-        help="String to be displayed in Login-Button"
     )
 
     userdata_url = Unicode(
@@ -71,7 +67,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         help="Access token endpoint URL"
     )
     extra_params = Dict(
-        os.environ.get('OAUTH2_AUTHENTICATION_PARAMS', {}),
         help="Extra parameters for first POST request"
     ).tag(config=True)
 
@@ -80,11 +75,10 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         config=True,
         help="Userdata username key from returned json for USERDATA_URL"
     )
-    userdata_params = {'scope':['openid','profile','email']}
-    #Dict(
-    #    os.environ.get('OAUTH2_USERDATA_PARAMS', {}),
-    #    help="Userdata params to get user data login information"
-    #).tag(config=True)
+    userdata_params = Dict(
+        {'scope':['openid','profile','email']},
+        help="Userdata params to get user data login information"
+    ).tag(config=True)
 
     userdata_method = Unicode(
         os.environ.get('OAUTH2_USERDATA_METHOD', 'GET'),
@@ -106,12 +100,6 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
-
-        if connectors != []:
-            pass
-        else:
-            raise ValueError("Please specify the CONNECTOR_LIST environment variable")
-
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
@@ -155,7 +143,9 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         refresh_token = resp_json.get('refresh_token', None)
         id_token = resp_json.get('id_token', None)
         token_type = resp_json['token_type']
-        scope = (resp_json.get('scope', '')).split(' ')
+        scope = resp_json.get('scope', '')
+        if (isinstance(scope, str)):
+                scope = scope.split(' ')
 
         # Get userinfo from id_token
         if not id_token:
