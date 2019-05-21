@@ -99,10 +99,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     )
 
     connectors = List(
-        os.environ.get('CONNECTOR_LIST',''),
-        config=True,
         help="List of allowed IDP endpoints"
-    )
+    ).tag(config=True)
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
