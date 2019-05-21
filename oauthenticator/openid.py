@@ -107,7 +107,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     @gen.coroutine
     def authenticate(self, handler, data=None):
 
-        if connectors != ['[]']:
+        if connectors != []:
             pass
         else:
             raise ValueError("Please specify the CONNECTOR_LIST environment variable")
