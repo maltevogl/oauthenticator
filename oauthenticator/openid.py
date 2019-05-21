@@ -29,16 +29,16 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 class OpenIDEnvMixin(OAuth2Mixin):
 
-    _OAUTH_ACCESS_TOKEN_URL = Unicode(
+    oauth_access_token_url = Unicode(
         os.environ.get('OAUTH2_TOKEN_URL', ''),
-        help="OpenID Connect endpoint for access token",
-        config=True
+        config=True,
+        help="OpenID Connect endpoint for access token"
     )
 
-    _OAUTH_AUTHORIZE_URL = Unicode(
+    oauth_authorize_url = Unicode(
         os.environ.get('OAUTH2_AUTHORIZE_URL', ''),
-        help="OpenID Connect enpoint for authorization",
-        config=True
+        config=True,
+        help="OpenID Connect enpoint for authorization"
     )
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
@@ -55,7 +55,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     scope =  ['openid', 'profile', 'email', 'groups']
 
     login_service = Unicode(
-        os.environ.get('LOGIN_SERVICE', 'dex'),
+        os.environ.get('LOGIN_SERVICE', ''),
         config=True,
         help="String to be displayed in Login-Button"
     )
@@ -99,7 +99,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     )
 
     connectors = List(
-        os.environ.get('CONNECTOR_LIST','').split(','),
+        os.environ.get('CONNECTOR_LIST',''),
         config=True,
         help="List of allowed IDP endpoints"
     )
@@ -107,7 +107,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     @gen.coroutine
     def authenticate(self, handler, data=None):
 
-        if connectors != ['']:
+        if connectors != ['[]']:
             pass
         else:
             raise ValueError("Please specify the CONNECTOR_LIST environment variable")
