@@ -28,9 +28,18 @@ from .oauth2 import OAuthLoginHandler, OAuthenticator
 
 
 class OpenIDEnvMixin(OAuth2Mixin):
-    _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
-    _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
-    _OAUTH_USERDATA_PARAMS = os.environ.get('OAUTH2_USERDATA_PARAMS', '')
+
+    _OAUTH_ACCESS_TOKEN_URL = Unicode(
+        os.environ.get('OAUTH2_TOKEN_URL', ''),
+        help="OpenID Connect endpoint for access token",
+        config=True
+    )
+
+    _OAUTH_AUTHORIZE_URL = Unicode(
+        os.environ.get('OAUTH2_AUTHORIZE_URL', ''),
+        help="OpenID Connect enpoint for authorization",
+        config=True
+    )
 
 class OpenIDLoginHandler(OAuthLoginHandler, OpenIDEnvMixin):
     @property
@@ -47,7 +56,8 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'dex'),
-        config=True
+        config=True,
+        help="String to be displayed in Login-Button"
     )
 
     userdata_url = Unicode(
@@ -88,14 +98,19 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         help="Disable TLS verification on http request"
     )
 
+    connectors = Unicode(
+        os.environ.get('CONNECTOR_LIST','').split(','),
+        config=True,
+        help="List of allowed IDP endpoints"
+    )
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        connectors = os.environ.get('CONNECTOR_LIST','').split(',')
 
         if connectors != ['']:
             pass
         else:
-            raise ValueError("Please set the CONNECTOR_LIST environment variable")
+            raise ValueError("Please specify the CONNECTOR_LIST environment variable")
 
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
