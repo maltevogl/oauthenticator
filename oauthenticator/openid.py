@@ -43,7 +43,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
 
     login_handler = OpenIDLoginHandler
 
-    scope =  ['openid', 'profile', 'email', 'groups']
+    scope =  ['openid', 'profile', 'email']
 
     login_service = Unicode(
         os.environ.get('LOGIN_SERVICE', 'MPIWG'),
