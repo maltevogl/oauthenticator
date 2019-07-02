@@ -95,7 +95,7 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
     )
 
     @gen.coroutine
-    def authenticate(self, handler, data=None):
+    def authenticate(self, handler, data=None, connectors=connectors):
         #connectors = os.environ.get('CONNECTOR_LIST','').split(',')
 
         if connectors != ['']:
