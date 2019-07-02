@@ -22,7 +22,7 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 from jupyterhub.auth import LocalAuthenticator
 
-from traitlets import Unicode, Dict, Bool
+from traitlets import Unicode, Dict, Bool, List
 
 from .oauth2 import OAuthLoginHandler, OAuthenticator
 
@@ -88,9 +88,15 @@ class OpenIDOAuthenticator(OAuthenticator, OpenIDEnvMixin):
         help="Disable TLS verification on http request"
     )
 
+    connectors = List(
+        os.environ.get('CONNECTOR_LIST','').split(','),
+        config=True,
+        help="List of allowed IDP names"
+    )
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
-        connectors = os.environ.get('CONNECTOR_LIST','').split(',')
+        #connectors = os.environ.get('CONNECTOR_LIST','').split(',')
 
         if connectors != ['']:
             pass
